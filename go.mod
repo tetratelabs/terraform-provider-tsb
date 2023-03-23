@@ -9,7 +9,6 @@ require (
 	github.com/hashicorp/terraform-plugin-framework-validators v0.5.0
 	github.com/hashicorp/terraform-plugin-go v0.14.3
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.23.0
-	github.com/tetrateio/api v0.0.0-20230110081117-9cefca6ac80d
 	github.com/tetrateio/tetrate v0.0.2-0.20230201205234-5d44a721cb40
 	google.golang.org/grpc v1.51.0
 )
@@ -68,6 +67,7 @@ require (
 	github.com/russross/blackfriday v1.6.0 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
+	github.com/tetrateio/api v0.0.0-20230204072422-470286015512 // indirect
 	github.com/tetratelabs/multierror v1.1.1 // indirect
 	github.com/vmihailenco/msgpack v4.0.4+incompatible // indirect
 	github.com/vmihailenco/msgpack/v4 v4.3.12 // indirect
