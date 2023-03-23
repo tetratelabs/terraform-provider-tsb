@@ -26,7 +26,7 @@ jobs:
       run: mkdir -p ~/.ssh && echo -e "\tStrictHostKeyChecking no" >> ~/.ssh/config && ssh-keyscan github.com >> ~/.ssh/known_hosts
     - name: Pull over SSH instead of HTTPS
       working-directory: .
-      run: sudo echo -e '[url "git@github.com:"]\n\tinsteadOf = https://github.com/' > /etc/gitconfig
+      run: echo -e '[url "git@github.com:"]\n\tinsteadOf = https://github.com/' | sudo tee /etc/gitconfig
 
     - name: Verify licenses
       run: make check
@@ -50,7 +50,7 @@ jobs:
       run: mkdir -p ~/.ssh && echo -e "\tStrictHostKeyChecking no" >> ~/.ssh/config && ssh-keyscan github.com >> ~/.ssh/known_hosts
     - name: Pull over SSH instead of HTTPS
       working-directory: .
-      run: sudo echo -e '[url "git@github.com:"]\n\tinsteadOf = https://github.com/' > /etc/gitconfig
+      run: echo -e '[url "git@github.com:"]\n\tinsteadOf = https://github.com/' | sudo tee /etc/gitconfig
 
     - name: Build
       run: make build
