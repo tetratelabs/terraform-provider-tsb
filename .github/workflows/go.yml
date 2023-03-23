@@ -18,13 +18,20 @@ jobs:
         go-version: 1.19
     - name: Install licenser
       run: 'go install github.com/liamawhite/licenser@v0.7.0'
-    - name: Set up access to private repo
-      run: 'echo "machine github.com login tetrateio password ${{ secrets.TETRATEIO_READ_PAT }}" >> ~/.netrc'
+    - name: Configure SSH Agent
+      uses: webfactory/ssh-agent@v0.4.1
+      with:
+        ssh-private-key: ${{ secrets.TETRATE_CI_SSH_PRIVATE_KEY }}
+    - name: Disable Strict Host Key Checking for SSH
+      run: mkdir -p ~/.ssh && echo -e "\tStrictHostKeyChecking no" >> ~/.ssh/config && ssh-keyscan github.com >> ~/.ssh/known_hosts
+    - name: Pull over SSH instead of HTTPS
+      working-directory: .
+      run: sudo echo -e '[url "git@github.com:"]\n\tinsteadOf = https://github.com/' > /etc/gitconfig
 
     - name: Verify licenses
       run: make check
       env:
-        GOPRIVATE: github.com/tetrateio
+        GOPRIVATE: github.com/tetrateio/*
 
   build:
     runs-on: ubuntu-latest
@@ -35,12 +42,19 @@ jobs:
       uses: actions/setup-go@v3
       with:
         go-version: 1.19
-    - name: Set up access to private repo
-      run: 'echo "machine github.com login tetrateio password ${{ secrets.TETRATEIO_READ_PAT }}" >> ~/.netrc'
+    - name: Configure SSH Agent
+      uses: webfactory/ssh-agent@v0.4.1
+      with:
+        ssh-private-key: ${{ secrets.TETRATE_CI_SSH_PRIVATE_KEY }}
+    - name: Disable Strict Host Key Checking for SSH
+      run: mkdir -p ~/.ssh && echo -e "\tStrictHostKeyChecking no" >> ~/.ssh/config && ssh-keyscan github.com >> ~/.ssh/known_hosts
+    - name: Pull over SSH instead of HTTPS
+      working-directory: .
+      run: sudo echo -e '[url "git@github.com:"]\n\tinsteadOf = https://github.com/' > /etc/gitconfig
 
     - name: Build
       run: make build
       env:
-        GOPRIVATE: github.com/tetrateio
+        GOPRIVATE: github.com/tetrateio/*
     
 
