@@ -16,7 +16,14 @@ default: test
 
 .PHONY: docs
 docs:
+	go install 
 	go generate ./...
+
+check:
+	licenser verify Tetrate -r
+
+lint:
+	licenser apply Tetrate -r .
 
 # WARNING!!! THESE CREATE ACTUAL RESOURCES
 # Run acceptance tests
