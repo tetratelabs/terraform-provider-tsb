@@ -348,6 +348,8 @@ github.com/stretchr/testify v1.7.2/go.mod h1:R6va5+xMeoiuVRoj+gSkQ7d3FALtqAAGI1F
 github.com/stretchr/testify v1.8.0 h1:pSgiaMZlXftHpm5L7V1+rVB+AZJydKsMxsQBIJw4PKk=
 github.com/tetrateio/api v0.0.0-20230110081117-9cefca6ac80d h1:KAOrfNfDWFiy1P9AOcIo+CCskIzEj0MnxEX8SThcu2E=
 github.com/tetrateio/api v0.0.0-20230110081117-9cefca6ac80d/go.mod h1:cs4KB35p7RKyT89X/JjmkY+OxbIFMlEcBnYTP/XlWOc=
+github.com/tetrateio/api v0.0.0-20230204072422-470286015512 h1:hb/vlb7xt7YW1wQJLz4zF4DilSLGyK86p9U37HzJuXk=
+github.com/tetrateio/api v0.0.0-20230204072422-470286015512/go.mod h1:SUlbWV5WfPYjUNMaWnzWNj+3xazhaMV0ff66pPTRlig=
 github.com/tetrateio/tetrate v0.0.2-0.20230201205234-5d44a721cb40 h1:mK8DI/BiHXE2NaHpKvahBL1a3ey10B7UydRbfpwpH0o=
 github.com/tetrateio/tetrate v0.0.2-0.20230201205234-5d44a721cb40/go.mod h1:58JZLAOeIpCAAueeaCFpMV4dL1VjWdsO07m5wcaYHwc=
 github.com/tetratelabs/multierror v1.1.1 h1:84JfJvfmnYC5y4877Ag3c4PkCUmQwq6sGI6iRfBATKI=
