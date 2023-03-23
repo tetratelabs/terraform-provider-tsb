@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package provider
+package organization_test
 
 import (
 	"bytes"
@@ -21,20 +21,21 @@ import (
 	"text/template"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/tetratelabs/terraform-provider-tsb/internal/provider/test"
 )
 
 func TestAccOrganizationDataSource(t *testing.T) {
-	org := orgConfig{Name: testAccOrganizationName, Fqn: fmt.Sprintf("organizations/%s", testAccOrganizationName)}
+	org := orgConfig{Id: fmt.Sprintf("organizations/%s", test.AccOrganizationName), Name: test.AccOrganizationName}
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		PreCheck:                 func() { test.AccPreCheck(t) },
+		ProtoV6ProviderFactories: test.AccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			// Read testing
 			{
-				Config: buildConfig(t, org.Block(t)),
+				Config: test.BuildConfig(t, org.Block(t)),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("data.tsb_organization."+org.Name, "id", org.Fqn),
-					resource.TestCheckResourceAttr("data.tsb_organization."+org.Name, "fqn", org.Fqn),
+					resource.TestCheckResourceAttr("data.tsb_organization."+test.AccOrganizationName, "id", org.Id),
+					resource.TestCheckResourceAttrSet("data.tsb_organization."+test.AccOrganizationName, "display_name"),
 				),
 			},
 		},
@@ -42,8 +43,10 @@ func TestAccOrganizationDataSource(t *testing.T) {
 }
 
 type orgConfig struct {
-	Name string
-	Fqn  string
+	Name        string
+	Id          string
+	Description string
+	DisplayName string
 }
 
 func (c orgConfig) Block(t *testing.T) string {
@@ -57,6 +60,6 @@ func (c orgConfig) Block(t *testing.T) string {
 
 const orgTmpl = `
 data "tsb_organization" "{{.Name}}" {
-	fqn = "{{.Fqn}}"
+	id = "{{.Id}}"
 }
 `

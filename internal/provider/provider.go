@@ -28,6 +28,8 @@ import (
 	"google.golang.org/grpc/credentials"
 
 	"github.com/tetratelabs/terraform-provider-tsb/internal/helpers"
+	"github.com/tetratelabs/terraform-provider-tsb/internal/provider/datasources/organization"
+	"github.com/tetratelabs/terraform-provider-tsb/internal/provider/resources/tenant"
 	"github.com/tetratelabs/terraform-provider-tsb/internal/provider/validators"
 )
 
@@ -87,8 +89,6 @@ func (p *TsbProvider) Configure(ctx context.Context, req provider.ConfigureReque
 	}
 
 	// TODO: support passing in custom ca bundles
-	// Disable "G402 (CWE-295): TLS MinVersion too low. (Confidence: HIGH, Severity: HIGH)"
-	// #nosec G402
 	tlsConfig := &tls.Config{}
 	opts := []grpc.DialOption{
 		grpc.WithBlock(),
@@ -108,15 +108,13 @@ func (p *TsbProvider) Configure(ctx context.Context, req provider.ConfigureReque
 
 func (p *TsbProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		NewTenantResource,
-		NewTeamResource,
-		NewServiceAccount,
+		tenant.NewResource,
 	}
 }
 
 func (p *TsbProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		NewOrganizationDataSource,
+		organization.NewDataSource,
 	}
 }
 

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package provider
+package tenant_test
 
 import (
 	"bytes"
@@ -22,35 +22,34 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/tetratelabs/terraform-provider-tsb/internal/provider/test"
 )
 
 func TestAccTenantResource(t *testing.T) {
 	name := fmt.Sprintf("tf_tenant_%v", time.Now().Unix())
 	original := tenantConfig{
 		Name:           name,
-		ParentFQN:      fmt.Sprintf("organizations/%s", testAccOrganizationName),
+		Parent:         fmt.Sprintf("organizations/%s", test.AccOrganizationName),
 		Description:    "I am a test Tenant created during Terraform Provider acceptance testing",
 		DisplayName:    "Terraform Provider Test Original",
-		SecurityDomain: fmt.Sprintf("organizations/%s/securitydomains/yolo", testAccOrganizationName),
+		SecurityDomain: fmt.Sprintf("organizations/%s/securitydomains/yolo", test.AccOrganizationName),
 	}
-	fqn := fmt.Sprintf("%v/tenants/%v", original.ParentFQN, original.Name)
 	updated := original
 	updated.DisplayName = "Terraform Provider Test Updated"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		PreCheck:                 func() { test.AccPreCheck(t) },
+		ProtoV6ProviderFactories: test.AccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: buildConfig(t, original.Block(t)),
+				Config: test.BuildConfig(t, original.Block(t)),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("tsb_tenant."+name, "name", original.Name),
-					resource.TestCheckResourceAttr("tsb_tenant."+name, "parent", original.ParentFQN),
-					resource.TestCheckResourceAttr("tsb_tenant."+name, "tenant.fqn", fqn),
-					resource.TestCheckResourceAttr("tsb_tenant."+name, "tenant.display_name", original.DisplayName),
-					resource.TestCheckResourceAttr("tsb_tenant."+name, "tenant.description", original.Description),
-					resource.TestCheckResourceAttr("tsb_tenant."+name, "tenant.security_domain", original.SecurityDomain),
+					resource.TestCheckResourceAttr("tsb_tenant."+name, "parent", original.Parent),
+					resource.TestCheckResourceAttr("tsb_tenant."+name, "display_name", original.DisplayName),
+					resource.TestCheckResourceAttr("tsb_tenant."+name, "description", original.Description),
+					resource.TestCheckResourceAttr("tsb_tenant."+name, "security_domain", original.SecurityDomain),
 				),
 			},
 			// ImportState testing
@@ -61,9 +60,9 @@ func TestAccTenantResource(t *testing.T) {
 			},
 			// Update and Read testing
 			{
-				Config: buildConfig(t, updated.Block(t)),
+				Config: test.BuildConfig(t, updated.Block(t)),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("tsb_tenant."+name, "tenant.display_name", updated.DisplayName)),
+					resource.TestCheckResourceAttr("tsb_tenant."+name, "display_name", updated.DisplayName)),
 			},
 			// Delete testing automatically occurs in TestCase
 		},
@@ -72,7 +71,8 @@ func TestAccTenantResource(t *testing.T) {
 
 type tenantConfig struct {
 	Name           string
-	ParentFQN      string
+	Id             string
+	Parent         string
 	DisplayName    string
 	Description    string
 	SecurityDomain string
@@ -89,12 +89,10 @@ func (c tenantConfig) Block(t *testing.T) string {
 
 const tenantTmpl = `
 resource "tsb_tenant" "{{.Name}}" {
-	parent = "{{.ParentFQN}}"
 	name = "{{.Name}}"
-	tenant = {
-		display_name = "{{.DisplayName}}"
-		description = "{{.Description}}"
-		security_domain = "{{.SecurityDomain}}"
-	}
+	parent = "{{.Parent}}"
+	display_name = "{{.DisplayName}}"
+	description = "{{.Description}}"
+	security_domain = "{{.SecurityDomain}}"
 }
 `

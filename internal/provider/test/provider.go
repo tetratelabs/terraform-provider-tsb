@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package provider
+package test
 
 import (
 	"bytes"
@@ -23,45 +23,46 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/tetratelabs/terraform-provider-tsb/internal/provider"
 )
 
-// testAccProtoV6ProviderFactories are used to instantiate a provider during
+// AccProtoV6ProviderFactories are used to instantiate a provider during
 // acceptance testing. The factory function will be invoked for every Terraform
 // CLI command executed to create a provider server to which the CLI can
 // reattach.
 var (
-	testAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServer, error){
-		"tsb": providerserver.NewProtocol6WithError(New("test")()),
+	AccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServer, error){
+		"tsb": providerserver.NewProtocol6WithError(provider.New("test")()),
 	}
 
-	testAccAddress          = os.Getenv("TSB_ADDRESS")
-	testAccUsername         = os.Getenv("TSB_USERNAME")
-	testAccPassword         = os.Getenv("TSB_PASSWORD")
-	testAccOrganizationName = os.Getenv("TSB_ORGANIZATION")
+	AccAddress          = os.Getenv("TSB_ADDRESS")
+	AccUsername         = os.Getenv("TSB_USERNAME")
+	AccPassword         = os.Getenv("TSB_PASSWORD")
+	AccOrganizationName = os.Getenv("TSB_ORGANIZATION")
 )
 
-func testAccPreCheck(t *testing.T) {
+func AccPreCheck(t *testing.T) {
 	// Verify all env vars were set
-	if testAccAddress == "" {
+	if AccAddress == "" {
 		t.Fatal("TSB_ADDRESS must be set for acceptance testing")
 	}
-	if testAccUsername == "" {
+	if AccUsername == "" {
 		t.Fatal("TSB_USERNAME must be set for acceptance testing")
 	}
-	if testAccPassword == "" {
+	if AccPassword == "" {
 		t.Fatal("TSB_PASSWORD must be set for acceptance testing")
 	}
-	if testAccOrganizationName == "" {
+	if AccOrganizationName == "" {
 		t.Fatal("TSB_PASSWORD must be set for acceptance testing")
 	}
 }
 
 // Pass all non-provider blocks in
 // Provider is automatically added to the front
-func buildConfig(t *testing.T, elems ...string) string {
+func BuildConfig(t *testing.T, elems ...string) string {
 	p := providerConfig{
-		Address:   testAccAddress,
-		BasicAuth: basicAuthConfig{Username: testAccUsername, Password: testAccPassword},
+		Address:   AccAddress,
+		BasicAuth: basicAuthConfig{Username: AccUsername, Password: AccPassword},
 	}
 	return strings.Join(append([]string{p.Block(t)}, elems...), "")
 }
