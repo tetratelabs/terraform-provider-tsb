@@ -13,9 +13,7 @@ To compile the provider, run `go install`. This will build the provider and put 
 
 To generate or update documentation, run `go generate`.
 
-In order to run the full suite of Acceptance tests, run `make test`.
-
-*Note:* Acceptance tests create real resources, and often cost money to run.
+In order to run the full suite of Acceptance tests you need a running TSB instance. Configure a .env file from the template and run `make test`.
 
 ```sh
 $ make test
@@ -27,26 +25,3 @@ $ make test
 - `examples` example Terraform configuration, used by docs generation code.
 - `internal/provider` the code that takes Terraform configuration and creates resources in TSB.
 - `tools` ensures the Go modules are present for doc generation.
-
-
-## TODOs
-- [ ] Evaluate whether we can gen code using golangs code gen from the api produced schema
-- [ ] Migrate API from deprecated types.String creation
-- [ ] Add Users
-- [ ] Add Roles
-- [ ] Add Org Access Bindings
-- [ ] Add Tenant Access Bindings
-- [ ] Add Clusters
-- [ ] Add new ClusterToken replacement
-- [ ] Add Workspace
-- [ ] Add GatewayGroup
-- [ ] Add IngressGateway
-- [ ] Add TrafficGroup
-- [ ] Add SecurityGroup
-
-
-
-Blocked by https://github.com/hashicorp/terraform-plugin-framework/issues/529:
-- [ ] Turn on Team Testing
-- [ ] Turn on Service Account Testing
-- [ ] Validate Key encoding in Service Accounts

@@ -3,13 +3,13 @@ module github.com/tetratelabs/terraform-provider-tsb
 go 1.19
 
 require (
-	github.com/davecgh/go-spew v1.1.1
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/hashicorp/terraform-plugin-docs v0.13.0
 	github.com/hashicorp/terraform-plugin-framework v1.1.1
 	github.com/hashicorp/terraform-plugin-framework-validators v0.5.0
 	github.com/hashicorp/terraform-plugin-go v0.14.3
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.23.0
-	github.com/tetrateio/api v0.0.0-20230131202215-e4baac2c9835
+	github.com/tetrateio/api v0.0.0-20230110081117-9cefca6ac80d
 	github.com/tetrateio/tetrate v0.0.2-0.20230201205234-5d44a721cb40
 	google.golang.org/grpc v1.51.0
 )

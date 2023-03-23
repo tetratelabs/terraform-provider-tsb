@@ -14,6 +14,10 @@
 
 default: test
 
+.PHONY: docs
+docs:
+	go generate ./...
+
 # WARNING!!! THESE CREATE ACTUAL RESOURCES
 # Run acceptance tests
 # Need to set the following env vars:
@@ -25,4 +29,4 @@ default: test
 # GRPC_GO_LOG_VERBOSITY_LEVEL=99 GRPC_GO_LOG_SEVERITY_LEVEL=info
 .PHONY: test
 test:
-	TF_ACC=1 go test ./... -v $(TESTARGS) -timeout 1m
+	source .env && TF_ACC=1 go test ./... -v $(TESTARGS) -timeout 1m

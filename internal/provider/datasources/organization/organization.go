@@ -12,12 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package provider
+package organization
 
 import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	types "github.com/hashicorp/terraform-plugin-framework/types"
 	tsbv2 "github.com/tetrateio/api/tsb/v2"
 
 	"github.com/tetratelabs/terraform-provider-tsb/internal/helpers"
@@ -26,7 +28,7 @@ import (
 // Ensure provider defined types fully satisfy framework interfaces
 var _ datasource.DataSource = &OrganizationDataSource{}
 
-func NewOrganizationDataSource() datasource.DataSource {
+func NewDataSource() datasource.DataSource {
 	return &OrganizationDataSource{}
 }
 
@@ -35,15 +37,29 @@ type OrganizationDataSource struct {
 	client tsbv2.OrganizationsClient
 }
 
-// Schema implements datasource.DataSource
-func (*OrganizationDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-	s, d := tsbv2.GenSchemaGetOrganizationRequest(ctx)
-	resp.Diagnostics.Append(d...)
-	resp.Schema = helpers.ResourceSchemaToDatasourceSchemar(s)
+type organizationDataSourceModel struct {
+	Id          types.String `tfsdk:"id"`
+	DisplayName types.String `tfsdk:"display_name"`
 }
 
 func (d *OrganizationDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_organization"
+}
+
+// Schema implements datasource.DataSource
+func (*OrganizationDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Required:    true,
+				Description: "Fully-qualified name of the resource.",
+			},
+			"display_name": schema.StringAttribute{
+				Description: "User friendly name for the resource.",
+				Optional:    true,
+			},
+		},
+	}
 }
 
 func (d *OrganizationDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
@@ -52,22 +68,4 @@ func (d *OrganizationDataSource) Configure(ctx context.Context, req datasource.C
 		return
 	}
 	d.client = clients.Organization
-}
-
-func (d *OrganizationDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	data := tsbv2.NewGetOrganizationRequestModelFromConfig(ctx, req.Config, &resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	org, err := d.client.GetOrganization(ctx, data.ToGo(ctx))
-	if err != nil {
-		resp.Diagnostics.AddError("Error reading Organization", "GetOrganization request failed: "+err.Error())
-		return
-	}
-
-	data.LoadFromResult(ctx, org.Fqn, &tsbv2.GetOrganizationRequest{Fqn: org.Fqn})
-
-	// Save data into Terraform state
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
