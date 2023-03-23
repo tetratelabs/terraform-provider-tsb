@@ -12,17 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-default: test
+default: build
 
 .PHONY: docs
 docs:
 	go install 
 	go generate ./...
 
-check:
-	licenser verify Tetrate -r
+build:
+	go build -v ./...
 
-lint:
+check: docs licenser
+	[ -z "`git status -uno --porcelain`" ] || (git status && echo 'Check failed. This could be a failed check or dirty git state.'; exit 1)
+
+licenser:
 	licenser apply Tetrate -r .
 
 # WARNING!!! THESE CREATE ACTUAL RESOURCES
