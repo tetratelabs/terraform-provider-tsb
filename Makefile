@@ -22,11 +22,10 @@ docs:
 build:
 	go build -v ./...
 
-check: docs
-	licenser verify Tetrate -r
+check: docs licenser
 	[ -z "`git status -uno --porcelain`" ] || (git status && echo 'Check failed. This could be a failed check or dirty git state.'; exit 1)
 
-lint:
+licenser:
 	licenser apply Tetrate -r .
 
 # WARNING!!! THESE CREATE ACTUAL RESOURCES
