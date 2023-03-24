@@ -19,7 +19,10 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	v2 "github.com/tetrateio/api/tsb/types/v2"
 	tsbv2 "github.com/tetrateio/api/tsb/v2"
+	"github.com/tetrateio/tetrate/pkg/api"
+	"github.com/tetratelabs/terraform-provider-tsb/internal/helpers"
 )
 
 func (r *TenantResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -30,8 +33,9 @@ func (r *TenantResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
+
 	tenant, err := r.client.CreateTenant(ctx, &tsbv2.CreateTenantRequest{
-		Parent: model.Parent.ValueString(),
+		Parent: helpers.FQN(api.OrganizationKind, &v2.ObjectMeta{Name: model.Organization.ValueString()}),
 		Name:   model.Name.ValueString(),
 		Tenant: &tsbv2.Tenant{
 			DisplayName:    model.DisplayName.ValueString(),
