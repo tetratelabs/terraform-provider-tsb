@@ -17,7 +17,6 @@ package tenant
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -44,7 +43,7 @@ type TenantResource struct {
 type tenantResourceModel struct {
 	Id             types.String `tfsdk:"id"`
 	Name           types.String `tfsdk:"name"`
-	Parent         types.String `tfsdk:"parent"`
+	Organization   types.String `tfsdk:"organization"`
 	Description    types.String `tfsdk:"description"`
 	DisplayName    types.String `tfsdk:"display_name"`
 	SecurityDomain types.String `tfsdk:"security_domain"`
@@ -64,12 +63,14 @@ func (*TenantResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 				PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"name": schema.StringAttribute{
-				Description: "The short name for the resource to be created.",
-				Required:    true,
+				Description:   "The short name for the resource to be created.",
+				Required:      true,
+				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
 			},
-			"parent": schema.StringAttribute{
-				Description: "Parent resource where the Tenant will be created.",
-				Required:    true,
+			"organization": schema.StringAttribute{
+				Description:   "The Organization the Tenant belongs to.",
+				Required:      true,
+				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
 			},
 			"display_name": schema.StringAttribute{
 				Description: "User friendly name for the resource.",
@@ -93,8 +94,4 @@ func (r *TenantResource) Configure(ctx context.Context, req resource.ConfigureRe
 		return
 	}
 	r.client = clients.Tenant
-}
-
-func (r *TenantResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tenant
+package serviceaccount
 
 import (
 	"context"
@@ -24,32 +24,38 @@ import (
 	"github.com/tetratelabs/terraform-provider-tsb/internal/helpers"
 )
 
-func (r *TenantResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+func (r *ServiceAccountResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	// Load state into the model
-	var model tenantResourceModel
+	var model serviceAccountResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	tenant, err := r.client.GetTenant(ctx, &tsbv2.GetTenantRequest{Fqn: model.Id.ValueString()})
+	serviceAccount, err := r.client.GetServiceAccount(
+		ctx,
+		&tsbv2.GetServiceAccountRequest{
+			Fqn:         model.Id.ValueString(),
+			KeyEncoding: tsbv2.ServiceAccount_KeyPair_Encoding(tsbv2.ServiceAccount_KeyPair_Encoding_value[model.KeyEncoding.ValueString()]),
+		},
+	)
 	if err != nil {
-		resp.Diagnostics.AddError("Error reading Tenant", "GetTenant request failed: "+err.Error())
+		resp.Diagnostics.AddError("Error reading ServiceAccount", "GetServiceAccount request failed: "+err.Error())
 		return
 	}
 
-	meta, err := helpers.FromFQN(api.TenantKind, model.Id.ValueString())
+	meta, err := helpers.FromFQN(api.ServiceAccountKind, model.Id.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError("Error reading Tenant", "FQN parsing failed: "+err.Error())
+		resp.Diagnostics.AddError("Error reading ServiceAccount", "FQN parsing failed: "+err.Error())
 		return
 	}
 
-	model.Id = types.StringValue(tenant.Fqn)
+	model.Id = types.StringValue(serviceAccount.Fqn)
 	model.Name = types.StringValue(meta.Name)
 	model.Organization = types.StringValue(meta.Organization)
-	model.Description = types.StringValue(tenant.Description)
-	model.DisplayName = types.StringValue(tenant.DisplayName)
-	model.SecurityDomain = types.StringValue(tenant.SecurityDomain)
+	model.Description = types.StringValue(serviceAccount.Description)
+	model.DisplayName = types.StringValue(serviceAccount.DisplayName)
+	// Keys cannot be read, they are only returned on create so don't touch them!
 
 	// Save model into Terraform model
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
