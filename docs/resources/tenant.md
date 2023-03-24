@@ -14,7 +14,7 @@ description: |-
 
 ```terraform
 resource "tsb_tenant" "example" {
-  parent          = "organizations/tetrate"
+  organization    = "tetrate"
   name            = "tenantone"
   display_name    = "Tenant One"
   description     = "I'm a tenant"
@@ -28,7 +28,7 @@ resource "tsb_tenant" "example" {
 ### Required
 
 - `name` (String) The short name for the resource to be created.
-- `parent` (String) Parent resource where the Tenant will be created.
+- `organization` (String) The Organization the Tenant belongs to.
 
 ### Optional
 
