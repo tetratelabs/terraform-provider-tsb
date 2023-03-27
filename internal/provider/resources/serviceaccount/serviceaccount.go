@@ -99,6 +99,7 @@ func (*ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaReques
 					"default_token": schema.StringAttribute{
 						Description: "A default access token that can be used to authenticate to TSB on behalf of the service account. TSB does not store this token and it is only returned when a service account key is created, similar to the private key. It is up to the client to store the token for future use or to use the TSB CLI to generate new tokens as explained in: https://docs.tetrate.io/service-bridge/latest/en-us/howto/service-accounts",
 						Computed:    true,
+						Sensitive:   true,
 					},
 					"encoding": schema.StringAttribute{
 						Description: "Format in which the public and private keys are encoded. By default keys are returned in PEM format.",
@@ -111,6 +112,7 @@ func (*ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaReques
 					"private_key": schema.StringAttribute{
 						Description: "The encoded private key associated with the service account. TSB does not store the private key and it is up to the client to store it safely. The encoding format is determined by the `encoding` field.",
 						Computed:    true,
+						Sensitive:   true,
 					},
 					"public_key": schema.StringAttribute{
 						Description: "The encoded public key associated with the service account. The encoding format is determined by the `encoding` field.",
