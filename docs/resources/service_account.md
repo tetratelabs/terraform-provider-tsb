@@ -46,10 +46,10 @@ resource "tsb_service_account" "example" {
 
 Read-Only:
 
-- `default_token` (String) A default access token that can be used to authenticate to TSB on behalf of the service account. TSB does not store this token and it is only returned when a service account key is created, similar to the private key. It is up to the client to store the token for future use or to use the TSB CLI to generate new tokens as explained in: https://docs.tetrate.io/service-bridge/latest/en-us/howto/service-accounts
+- `default_token` (String, Sensitive) A default access token that can be used to authenticate to TSB on behalf of the service account. TSB does not store this token and it is only returned when a service account key is created, similar to the private key. It is up to the client to store the token for future use or to use the TSB CLI to generate new tokens as explained in: https://docs.tetrate.io/service-bridge/latest/en-us/howto/service-accounts
 - `encoding` (String) Format in which the public and private keys are encoded. By default keys are returned in PEM format.
 - `id` (String) Unique identifier for this key-pair. This should be used as the `kid` (key id) when generating JWT tokens that are signed with this key-pair.
-- `private_key` (String) The encoded private key associated with the service account. TSB does not store the private key and it is up to the client to store it safely. The encoding format is determined by the `encoding` field.
+- `private_key` (String, Sensitive) The encoded private key associated with the service account. TSB does not store the private key and it is up to the client to store it safely. The encoding format is determined by the `encoding` field.
 - `public_key` (String) The encoded public key associated with the service account. The encoding format is determined by the `encoding` field.
 
 

@@ -29,8 +29,8 @@ import (
 
 	"github.com/tetratelabs/terraform-provider-tsb/internal/helpers"
 	"github.com/tetratelabs/terraform-provider-tsb/internal/provider/datasources/organization"
-	"github.com/tetratelabs/terraform-provider-tsb/internal/provider/resources/tenant"
 	"github.com/tetratelabs/terraform-provider-tsb/internal/provider/resources/serviceaccount"
+	"github.com/tetratelabs/terraform-provider-tsb/internal/provider/resources/tenant"
 	"github.com/tetratelabs/terraform-provider-tsb/internal/provider/validators"
 )
 

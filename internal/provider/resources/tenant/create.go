@@ -33,7 +33,6 @@ func (r *TenantResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-
 	tenant, err := r.client.CreateTenant(ctx, &tsbv2.CreateTenantRequest{
 		Parent: helpers.FQN(api.OrganizationKind, &v2.ObjectMeta{Name: model.Organization.ValueString()}),
 		Name:   model.Name.ValueString(),
