@@ -51,6 +51,6 @@ func (r *UserResource) Create(ctx context.Context, req resource.CreateRequest, r
 	}
 
 	model.Id = types.StringValue(user.Fqn)
-	
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 }
