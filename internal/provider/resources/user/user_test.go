@@ -31,8 +31,8 @@ func TestAccUserResource(t *testing.T) {
 	original := userConfig{
 		Name:         name,
 		Organization: test.AccOrganizationName,
-		DisplayName:  "Terraform Provider Test Original",
-		LoginName:    "tfprovidertest",
+		DisplayName:  "Terry Form",
+		LoginName:    "terryfrom",
 		FirstName:    "Terry",
 		LastName:     "Form",
 		Email:        "terry.form@tetrate.io",
