@@ -45,6 +45,7 @@ func TestFromFQN(t *testing.T) {
 		{fqn: "organizations/test/tenants/test", kind: api.TenantKind, want: &types.ObjectMeta{Organization: "test", Name: "test"}},
 		{fqn: "organizations/test/teams/test", kind: api.TeamKind, want: &types.ObjectMeta{Organization: "test", Name: "test"}},
 		{fqn: "organizations/test/serviceaccounts/test", kind: api.ServiceAccountKind, want: &types.ObjectMeta{Organization: "test", Name: "test"}},
+		{fqn: "organizations/test/users/test", kind: api.UserKind, want: &types.ObjectMeta{Organization: "test", Name: "test"}},
 	}
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("%v %v", tt.kind, tt.fqn), func(t *testing.T) {
