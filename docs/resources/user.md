@@ -14,7 +14,7 @@ description: |-
 
 ```terraform
 resource "tsb_user" "example" {
-  organization = "tetrate"
+  parent       = "organizations/tetrate"
   name         = "terryform"
   display_name = "Terry Form"
   login_name   = "terryform"
@@ -31,7 +31,7 @@ resource "tsb_user" "example" {
 
 - `login_name` (String) The username used in the login credentials.
 - `name` (String) The short name for the resource to be created.
-- `organization` (String) The Organization the User belongs to.
+- `parent` (String) The parent ID of the user.
 
 ### Optional
 

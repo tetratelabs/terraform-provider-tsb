@@ -15,7 +15,7 @@ description: |-
 ```terraform
 resource "tsb_service_account" "example" {
   name         = "ciautomation"
-  organization = "tetrate"
+  parent       = "organizations/tetrate"
   display_name = "CI Automation"
   description  = "Used by our CI tool to create resources"
   key_encoding = "JWT"
@@ -28,7 +28,7 @@ resource "tsb_service_account" "example" {
 ### Required
 
 - `name` (String) The short name for the resource to be created.
-- `organization` (String) The organization the Service Account will belong to.
+- `parent` (String) The parent ID of the Service Account.
 
 ### Optional
 
