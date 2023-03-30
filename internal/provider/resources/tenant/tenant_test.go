@@ -27,10 +27,11 @@ import (
 
 func TestAccTenantResource(t *testing.T) {
 	name := fmt.Sprintf("tf_tenant_%v", time.Now().Unix())
-	id := fmt.Sprintf("organizations/%v/tenants/%v", test.AccOrganizationName, name)
+	parent := fmt.Sprintf("organizations/%v", test.AccOrganizationName)
+	id := fmt.Sprintf("%v/tenants/%v", parent, name)
 	original := tenantConfig{
 		Name:           name,
-		Organization:   test.AccOrganizationName,
+		Parent:         parent,
 		Description:    "I am a test Tenant created during Terraform Provider acceptance testing",
 		DisplayName:    "Terraform Provider Test Original",
 		SecurityDomain: fmt.Sprintf("organizations/%s/securitydomains/yolo", test.AccOrganizationName),
@@ -48,7 +49,7 @@ func TestAccTenantResource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("tsb_tenant."+name, "id", id),
 					resource.TestCheckResourceAttr("tsb_tenant."+name, "name", original.Name),
-					resource.TestCheckResourceAttr("tsb_tenant."+name, "organization", original.Organization),
+					resource.TestCheckResourceAttr("tsb_tenant."+name, "parent", original.Parent),
 					resource.TestCheckResourceAttr("tsb_tenant."+name, "display_name", original.DisplayName),
 					resource.TestCheckResourceAttr("tsb_tenant."+name, "description", original.Description),
 					resource.TestCheckResourceAttr("tsb_tenant."+name, "security_domain", original.SecurityDomain),
@@ -73,7 +74,7 @@ func TestAccTenantResource(t *testing.T) {
 
 type tenantConfig struct {
 	Name           string
-	Organization   string
+	Parent         string
 	DisplayName    string
 	Description    string
 	SecurityDomain string
@@ -91,7 +92,7 @@ func (c tenantConfig) Block(t *testing.T) string {
 const tenantTmpl = `
 resource "tsb_tenant" "{{.Name}}" {
 	name = "{{.Name}}"
-	organization = "{{.Organization}}"
+	parent = "{{.Parent}}"
 	display_name = "{{.DisplayName}}"
 	description = "{{.Description}}"
 	security_domain = "{{.SecurityDomain}}"

@@ -1,5 +1,5 @@
 resource "tsb_user" "example" {
-  organization = "tetrate"
+  parent       = "organizations/tetrate"
   name         = "terryform"
   display_name = "Terry Form"
   login_name   = "terryform"

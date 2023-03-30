@@ -42,15 +42,15 @@ type UserResource struct {
 }
 
 type userResourceModel struct {
-	Id           types.String `tfsdk:"id"`
-	Name         types.String `tfsdk:"name"`
-	Organization types.String `tfsdk:"organization"`
-	DisplayName  types.String `tfsdk:"display_name"`
-	LoginName    types.String `tfsdk:"login_name"`
-	FirstName    types.String `tfsdk:"first_name"`
-	LastName     types.String `tfsdk:"last_name"`
-	Email        types.String `tfsdk:"email"`
-	SourceType   types.String `tfsdk:"source_type"`
+	Id          types.String `tfsdk:"id"`
+	Name        types.String `tfsdk:"name"`
+	Parent      types.String `tfsdk:"parent"`
+	DisplayName types.String `tfsdk:"display_name"`
+	LoginName   types.String `tfsdk:"login_name"`
+	FirstName   types.String `tfsdk:"first_name"`
+	LastName    types.String `tfsdk:"last_name"`
+	Email       types.String `tfsdk:"email"`
+	SourceType  types.String `tfsdk:"source_type"`
 }
 
 func (r *UserResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -71,8 +71,8 @@ func (*UserResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *r
 				Required:      true,
 				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
 			},
-			"organization": schema.StringAttribute{
-				Description:   "The Organization the User belongs to.",
+			"parent": schema.StringAttribute{
+				Description:   "The parent ID of the user.",
 				Required:      true,
 				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
 			},

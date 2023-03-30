@@ -43,7 +43,7 @@ type TenantResource struct {
 type tenantResourceModel struct {
 	Id             types.String `tfsdk:"id"`
 	Name           types.String `tfsdk:"name"`
-	Organization   types.String `tfsdk:"organization"`
+	Parent         types.String `tfsdk:"parent"`
 	Description    types.String `tfsdk:"description"`
 	DisplayName    types.String `tfsdk:"display_name"`
 	SecurityDomain types.String `tfsdk:"security_domain"`
@@ -67,8 +67,8 @@ func (*TenantResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 				Required:      true,
 				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
 			},
-			"organization": schema.StringAttribute{
-				Description:   "The Organization the Tenant belongs to.",
+			"parent": schema.StringAttribute{
+				Description:   "The parent ID of the Tenant.",
 				Required:      true,
 				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
 			},

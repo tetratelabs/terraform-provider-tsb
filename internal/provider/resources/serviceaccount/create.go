@@ -21,10 +21,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/samber/lo"
-	v2 "github.com/tetrateio/api/tsb/types/v2"
 	tsbv2 "github.com/tetrateio/api/tsb/v2"
-	"github.com/tetrateio/tetrate/pkg/api"
-	"github.com/tetratelabs/terraform-provider-tsb/internal/helpers"
 )
 
 func (r *ServiceAccountResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -36,7 +33,7 @@ func (r *ServiceAccountResource) Create(ctx context.Context, req resource.Create
 	}
 
 	serviceAccount, err := r.client.CreateServiceAccount(ctx, &tsbv2.CreateServiceAccountRequest{
-		Parent:      helpers.FQN(api.OrganizationKind, &v2.ObjectMeta{Name: model.Organization.ValueString()}),
+		Parent:      model.Parent.ValueString(),
 		Name:        model.Name.ValueString(),
 		KeyEncoding: tsbv2.ServiceAccount_KeyPair_Encoding(tsbv2.ServiceAccount_KeyPair_Encoding_value[model.KeyEncoding.ValueString()]),
 		ServiceAccount: &tsbv2.ServiceAccount{

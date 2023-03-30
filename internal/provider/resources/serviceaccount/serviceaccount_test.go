@@ -27,13 +27,14 @@ import (
 
 func TestAccServiceAccountResource(t *testing.T) {
 	name := fmt.Sprintf("tf_service_account_%v", time.Now().Unix())
-	id := fmt.Sprintf("organizations/%v/serviceaccounts/%v", test.AccOrganizationName, name)
+	parent := fmt.Sprintf("organizations/%v", test.AccOrganizationName)
+	id := fmt.Sprintf("%v/serviceaccounts/%v", parent, name)
 	original := serviceAccountConfig{
-		Name:         name,
-		Organization: test.AccOrganizationName,
-		Description:  "I am a test ServiceAccount created during Terraform Provider acceptance testing",
-		DisplayName:  "Terraform Provider Test Original",
-		KeyEncoding:  "JWK",
+		Name:        name,
+		Parent:      parent,
+		Description: "I am a test ServiceAccount created during Terraform Provider acceptance testing",
+		DisplayName: "Terraform Provider Test Original",
+		KeyEncoding: "JWK",
 	}
 	updated := original
 	updated.DisplayName = "Terraform Provider Test Updated"
@@ -48,7 +49,7 @@ func TestAccServiceAccountResource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("tsb_service_account."+name, "id", id),
 					resource.TestCheckResourceAttr("tsb_service_account."+name, "name", original.Name),
-					resource.TestCheckResourceAttr("tsb_service_account."+name, "organization", original.Organization),
+					resource.TestCheckResourceAttr("tsb_service_account."+name, "parent", original.Parent),
 					resource.TestCheckResourceAttr("tsb_service_account."+name, "display_name", original.DisplayName),
 					resource.TestCheckResourceAttr("tsb_service_account."+name, "description", original.Description),
 					resource.TestCheckResourceAttr("tsb_service_account."+name, "key_encoding", original.KeyEncoding),
@@ -80,11 +81,11 @@ func TestAccServiceAccountResource(t *testing.T) {
 }
 
 type serviceAccountConfig struct {
-	Name         string
-	Organization string
-	Description  string
-	DisplayName  string
-	KeyEncoding  string
+	Name        string
+	Parent      string
+	Description string
+	DisplayName string
+	KeyEncoding string
 }
 
 func (c serviceAccountConfig) Block(t *testing.T) string {
@@ -99,7 +100,7 @@ func (c serviceAccountConfig) Block(t *testing.T) string {
 const serviceAccountTmpl = `
 resource "tsb_service_account" "{{.Name}}" {
 	name = "{{.Name}}"
-	organization = "{{.Organization}}"
+	parent = "{{.Parent}}"
 	display_name = "{{.DisplayName}}"
 	description = "{{.Description}}"
 	key_encoding = "{{.KeyEncoding}}"

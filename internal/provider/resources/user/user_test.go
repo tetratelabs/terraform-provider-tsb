@@ -27,15 +27,16 @@ import (
 
 func TestAccUserResource(t *testing.T) {
 	name := fmt.Sprintf("tf_user_%v", time.Now().Unix())
-	id := fmt.Sprintf("organizations/%v/users/%v", test.AccOrganizationName, name)
+	parent := fmt.Sprintf("organizations/%v", test.AccOrganizationName)
+	id := fmt.Sprintf("%v/users/%v", parent, name)
 	original := userConfig{
-		Name:         name,
-		Organization: test.AccOrganizationName,
-		DisplayName:  "Terry Form",
-		LoginName:    "terryfrom",
-		FirstName:    "Terry",
-		LastName:     "Form",
-		Email:        "terry.form@tetrate.io",
+		Name:        name,
+		Parent:      parent,
+		DisplayName: "Terry Form",
+		LoginName:   "terryfrom",
+		FirstName:   "Terry",
+		LastName:    "Form",
+		Email:       "terry.form@tetrate.io",
 	}
 	updated := original
 	updated.DisplayName = "Terraform Provider Test Updated"
@@ -50,7 +51,7 @@ func TestAccUserResource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("tsb_user."+name, "id", id),
 					resource.TestCheckResourceAttr("tsb_user."+name, "name", original.Name),
-					resource.TestCheckResourceAttr("tsb_user."+name, "organization", original.Organization),
+					resource.TestCheckResourceAttr("tsb_user."+name, "parent", original.Parent),
 					resource.TestCheckResourceAttr("tsb_user."+name, "display_name", original.DisplayName),
 					resource.TestCheckResourceAttr("tsb_user."+name, "login_name", original.LoginName),
 					resource.TestCheckResourceAttr("tsb_user."+name, "first_name", original.FirstName),
@@ -76,13 +77,13 @@ func TestAccUserResource(t *testing.T) {
 }
 
 type userConfig struct {
-	Name         string
-	Organization string
-	DisplayName  string
-	LoginName    string
-	FirstName    string
-	LastName     string
-	Email        string
+	Name        string
+	Parent      string
+	DisplayName string
+	LoginName   string
+	FirstName   string
+	LastName    string
+	Email       string
 }
 
 func (c userConfig) Block(t *testing.T) string {
@@ -97,7 +98,7 @@ func (c userConfig) Block(t *testing.T) string {
 const userTmpl = `
 resource "tsb_user" "{{.Name}}" {
 	name = "{{.Name}}"
-	organization = "{{.Organization}}"
+	parent = "{{.Parent}}"
 	display_name = "{{.DisplayName}}"
 	login_name = "{{.LoginName}}"
 	first_name = "{{.FirstName}}"

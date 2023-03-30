@@ -52,7 +52,7 @@ func (r *ServiceAccountResource) Read(ctx context.Context, req resource.ReadRequ
 
 	model.Id = types.StringValue(serviceAccount.Fqn)
 	model.Name = types.StringValue(meta.Name)
-	model.Organization = types.StringValue(meta.Organization)
+	model.Parent = types.StringValue(helpers.ParentFQN(api.ServiceAccountKind, meta))
 	model.Description = types.StringValue(serviceAccount.Description)
 	model.DisplayName = types.StringValue(serviceAccount.DisplayName)
 	// Keys cannot be read, they are only returned on create so don't touch them!
