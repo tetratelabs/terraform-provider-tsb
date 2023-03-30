@@ -41,6 +41,7 @@ var apiToRegexp = map[string]*regexp.Regexp{
 	api.OrganizationKind:   regexp.MustCompile("^organizations/([^/]+)$"),
 	api.TenantKind:         regexp.MustCompile("^organizations/([^/]+)/tenants/([^/]+)$"),
 	api.TeamKind:           regexp.MustCompile("^organizations/([^/]+)/teams/([^/]+)$"),
+	api.UserKind:           regexp.MustCompile("^organizations/([^/]+)/users/([^/]+)$"),
 	api.ServiceAccountKind: regexp.MustCompile("^organizations/([^/]+)/serviceaccounts/([^/]+)$"),
 }
 
@@ -67,7 +68,7 @@ func FromFQN(kind string, fqn string) (*types.ObjectMeta, error) {
 			return nil, err
 		}
 		result.Name = groups[0]
-	case api.TenantKind, api.TeamKind, api.ServiceAccountKind:
+	case api.TenantKind, api.TeamKind, api.ServiceAccountKind, api.UserKind:
 		if len(groups) != 2 {
 			return nil, err
 		}

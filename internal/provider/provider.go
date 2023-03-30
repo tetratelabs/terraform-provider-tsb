@@ -31,6 +31,7 @@ import (
 	"github.com/tetratelabs/terraform-provider-tsb/internal/provider/datasources/organization"
 	"github.com/tetratelabs/terraform-provider-tsb/internal/provider/resources/serviceaccount"
 	"github.com/tetratelabs/terraform-provider-tsb/internal/provider/resources/tenant"
+	"github.com/tetratelabs/terraform-provider-tsb/internal/provider/resources/user"
 	"github.com/tetratelabs/terraform-provider-tsb/internal/provider/validators"
 )
 
@@ -111,6 +112,7 @@ func (p *TsbProvider) Resources(ctx context.Context) []func() resource.Resource 
 	return []func() resource.Resource{
 		tenant.NewResource,
 		serviceaccount.NewResource,
+		user.NewResource,
 	}
 }
 
