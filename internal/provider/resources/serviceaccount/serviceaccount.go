@@ -43,12 +43,12 @@ type ServiceAccountResource struct {
 }
 
 type serviceAccountResourceModel struct {
-	Id           types.String `tfsdk:"id"`
-	Name         types.String `tfsdk:"name"`
-	Organization types.String `tfsdk:"organization"`
-	Description  types.String `tfsdk:"description"`
-	DisplayName  types.String `tfsdk:"display_name"`
-	KeyEncoding  types.String `tfsdk:"key_encoding"`
+	Id          types.String `tfsdk:"id"`
+	Name        types.String `tfsdk:"name"`
+	Parent      types.String `tfsdk:"parent"`
+	Description types.String `tfsdk:"description"`
+	DisplayName types.String `tfsdk:"display_name"`
+	KeyEncoding types.String `tfsdk:"key_encoding"`
 	// types.List is used because keys can be null during read, try to avoid for normal resources.
 	Keys types.List `tfsdk:"keys"`
 }
@@ -71,8 +71,8 @@ func (*ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaReques
 				Required:      true,
 				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
 			},
-			"organization": schema.StringAttribute{
-				Description:   "The organization the Service Account will belong to.",
+			"parent": schema.StringAttribute{
+				Description:   "The parent ID of the Service Account.",
 				Required:      true,
 				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
 			},

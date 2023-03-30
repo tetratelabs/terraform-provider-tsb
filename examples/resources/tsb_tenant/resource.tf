@@ -1,5 +1,5 @@
 resource "tsb_tenant" "example" {
-  organization    = "tetrate"
+  parent          = "organizations/tetrate"
   name            = "tenantone"
   display_name    = "Tenant One"
   description     = "I'm a tenant"

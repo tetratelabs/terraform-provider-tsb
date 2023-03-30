@@ -46,7 +46,7 @@ func (r *UserResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 
 	model.Id = types.StringValue(user.Fqn)
 	model.Name = types.StringValue(meta.Name)
-	model.Organization = types.StringValue(meta.Organization)
+	model.Parent = types.StringValue(helpers.ParentFQN(api.UserKind, meta))
 	model.DisplayName = types.StringValue(user.DisplayName)
 	model.Email = types.StringValue(user.Email)
 	model.FirstName = types.StringValue(user.FirstName)
