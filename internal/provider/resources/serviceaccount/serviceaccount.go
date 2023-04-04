@@ -21,12 +21,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	tsbv2 "github.com/tetrateio/api/tsb/v2"
 
 	"github.com/tetratelabs/terraform-provider-tsb/internal/helpers"
-	"github.com/tetratelabs/terraform-provider-tsb/internal/provider/defaults"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
@@ -89,7 +89,7 @@ func (*ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaReques
 				Optional:      true,
 				Computed:      true,
 				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
-				Default:       defaults.ProtoEnumDefault(tsbv2.ServiceAccount_KeyPair_Encoding_name),
+				Default:       stringdefault.StaticString(tsbv2.ServiceAccount_KeyPair_Encoding_name[0]),
 			},
 			"keys": schema.ListNestedAttribute{
 				Computed:      true,
@@ -125,7 +125,7 @@ func (*ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaReques
 }
 
 func (r *ServiceAccountResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	clients := helpers.BuildClientsResource(ctx, req, resp)
+	clients := helpers.BuildClientsResource(req, resp)
 	if resp.Diagnostics.HasError() || clients == nil {
 		return
 	}

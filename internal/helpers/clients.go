@@ -25,9 +25,12 @@ import (
 )
 
 type Clients struct {
-	Organization tsbv2.OrganizationsClient
-	Tenant       tsbv2.TenantsClient
-	Team         tsbv2.TeamsClient
+	Organization   tsbv2.OrganizationsClient
+	Tenant         tsbv2.TenantsClient
+	User           tsbv2.TeamsClient
+	ServiceAccount tsbv2.TeamsClient
+	Team           tsbv2.TeamsClient
+	Cluster        tsbv2.ClustersClient
 }
 
 func NewClients(cc *grpc.ClientConn) *Clients {
@@ -35,6 +38,8 @@ func NewClients(cc *grpc.ClientConn) *Clients {
 		Organization: tsbv2.NewOrganizationsClient(cc),
 		Tenant:       tsbv2.NewTenantsClient(cc),
 		Team:         tsbv2.NewTeamsClient(cc),
+		User:         tsbv2.NewTeamsClient(cc),
+		Cluster:      tsbv2.NewClustersClient(cc),
 	}
 }
 
@@ -60,10 +65,10 @@ func BuildClientsDatasource(_ context.Context, req datasource.ConfigureRequest, 
 
 // Can't use generics for this yet...
 // See https://github.com/golang/go/issues/48522
-func BuildClientsResource(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) *Clients {
+func BuildClientsResource(req resource.ConfigureRequest, resp *resource.ConfigureResponse) *Clients {
 	// Prevent panic if the provider has not been configured.
 	if req.ProviderData == nil {
-		// resp.Diagnostics.AddError("Provider not configured", "Expectect req.ProviderData to be populated, but was nil")
+		// resp.Diagnostics.AddError("Provider not configured", "Expected req.ProviderData to be populated, but was nil")
 		return nil
 	}
 
