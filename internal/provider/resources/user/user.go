@@ -20,12 +20,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	tsbv2 "github.com/tetrateio/api/tsb/v2"
 
 	"github.com/tetratelabs/terraform-provider-tsb/internal/helpers"
-	"github.com/tetratelabs/terraform-provider-tsb/internal/provider/defaults"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
@@ -99,14 +99,14 @@ func (*UserResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *r
 			"source_type": schema.StringAttribute{
 				Computed:    true,
 				Description: "Where the user comes from. It can be a local user that exists only in TSB (LOCAL) or it can be a user that has been synchronized from the Identity Provider (LDAP).",
-				Default:     defaults.StringDefault(tsbv2.SourceType_name[4]), // MANUAL
+				Default:     stringdefault.StaticString(tsbv2.SourceType_name[4]), // MANUAL
 			},
 		},
 	}
 }
 
 func (r *UserResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	clients := helpers.BuildClientsResource(ctx, req, resp)
+	clients := helpers.BuildClientsResource(req, resp)
 	if resp.Diagnostics.HasError() || clients == nil {
 		return
 	}

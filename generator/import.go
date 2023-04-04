@@ -12,14 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tenant
+package main
 
 import (
-	"context"
-	path "github.com/hashicorp/terraform-plugin-framework/path"
-	resource "github.com/hashicorp/terraform-plugin-framework/resource"
+	j "github.com/dave/jennifer/jen"
 )
 
-func (r *TenantResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+func genImport(r resource) *j.File {
+	f := j.NewFile(r.lowerName)
+
+	f.Func().
+		Parens(j.Id("r").Op("*").Add(r.structId)).Id("ImportState").
+		Params(j.Id("ctx").Qual("context", "Context"), j.Id("req").Qual(Resource, "ImportStateRequest"), j.Id("resp").Op("*").Qual(Resource, "ImportStateResponse")).
+		Block(
+			j.Qual(Resource, "ImportStatePassthroughID").Call(j.Id("ctx"), j.Qual(Path, "Root").Call(j.Lit("id")), j.Id("req"), j.Id("resp")),
+		)
+
+	return f
 }

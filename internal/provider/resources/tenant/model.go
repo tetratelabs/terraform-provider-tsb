@@ -14,12 +14,14 @@
 
 package tenant
 
-import (
-	"context"
-	path "github.com/hashicorp/terraform-plugin-framework/path"
-	resource "github.com/hashicorp/terraform-plugin-framework/resource"
-)
+import types "github.com/hashicorp/terraform-plugin-framework/types"
 
-func (r *TenantResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+// tfsdk typed model definition
+type TenantModel struct {
+	Name           types.String `tfsdk:"name"`
+	Parent         types.String `tfsdk:"parent"`
+	SecurityDomain types.String `tfsdk:"security_domain"`
+	Description    types.String `tfsdk:"description"`
+	DisplayName    types.String `tfsdk:"display_name"`
+	Id             types.String `tfsdk:"id"`
 }

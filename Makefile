@@ -31,6 +31,9 @@ format:
 licenser:
 	licenser apply Tetrate -r .
 
+gen:
+	go run generator/*.go
+
 # WARNING!!! THESE CREATE ACTUAL RESOURCES
 # Run acceptance tests
 # Need to set the following env vars:
