@@ -27,8 +27,8 @@ resource "tsb_tenant" "example" {
 
 ### Required
 
-- `name` (String) The short name for the resource to be created.
-- `parent` (String) The parent ID of the Tenant.
+- `name` (String) Short name of the Tenant resource.
+- `parent` (String) The parent id for the Tenant resource.
 
 ### Optional
 
@@ -38,6 +38,6 @@ resource "tsb_tenant" "example" {
 
 ### Read-Only
 
-- `id` (String) Fully-qualified name of the resource.
+- `id` (String) Fully-qualified name of the Tenant resource.
 
 
