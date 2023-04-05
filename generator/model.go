@@ -15,6 +15,7 @@
 package main
 
 import (
+	"context"
 	"strings"
 
 	j "github.com/dave/jennifer/jen"
@@ -27,17 +28,63 @@ import (
 func genModel(r resource) *j.File {
 	f := j.NewFile(r.lowerName)
 
+	f.Comment("// tfsdk typed model definition")
+	genStruct(f, r.modelId, r.Schema.Attributes, "")
+
+	// f.Type().Add(r.modelId).Struct(fields...)
+
+	return f
+}
+
+func genStruct(f *j.File, structName j.Code, attributes map[string]schema.Attribute, suffix string) j.Code {
 	fields := lo.MapToSlice(
-		lo.MapValues(r.Schema.Attributes, func(attribute schema.Attribute, name string) j.Code {
-			return j.Id(snakeToCamel(name)).Qual(Types, "String").Tag(map[string]string{"tfsdk": name})
+		lo.MapValues(attributes, func(attribute schema.Attribute, fieldName string) j.Code {
+			// nestedModelName := j.Id(fieldName)
+			fieldId := j.Id(snakeToCamel(fieldName))
+			tag := j.Tag(map[string]string{"tfsdk": fieldName})
+
+			switch attribute.(type) {
+			// case schema.ListAttribute:
+			// 	return fieldId.Add(j.Qual(Types, "List")).Add(tag)
+			case schema.ListNestedAttribute:
+				newStruct := genStruct(f, j.Id(snakeToCamel(fieldName+"_"+suffix+"_Model")), map[string]schema.Attribute{}, suffix+"_"+fieldName)
+				return fieldId.Add(j.List().Add(newStruct)).Add(tag)
+			case schema.ListAttribute:
+				return fieldId.Qual(Types, "List").Add(tag)
+			case schema.MapAttribute:
+				newStruct := genStruct(f, j.Id(snakeToCamel(fieldName+"_"+suffix+"_Model")), map[string]schema.Attribute{}, suffix+"_"+fieldName)
+				return fieldId.Add(newStruct).Add(tag)
+			case schema.NestedAttribute:
+				underlying := attribute.(schema.NestedAttribute).GetNestedObject().GetAttributes()
+				// asdf := lo.MapEntries(underlying, func(k string, v fwschema.Attribute) (string, schema.Attribute) {
+				// 	return k, v.(schema.Attribute)
+				// })
+				asdf := make(map[string]schema.Attribute)
+				for k, v := range underlying {
+					asdf[k] = v
+				}
+
+				newStruct := genStruct(f, j.Id(snakeToCamel(fieldName+"_"+suffix+"_Model")), asdf, suffix+"_"+fieldName)
+				return fieldId.Add(newStruct).Add(tag)
+			default:
+				return fieldId.Add(attrToType(attribute)).Add(tag)
+			}
+
 		}),
 		func(_ string, code j.Code) j.Code { return code },
 	)
 
-	f.Comment("// tfsdk typed model definition")
-	f.Type().Add(r.modelId).Struct(fields...)
+	f.Type().Add(structName).Struct(fields...)
+	return structName
+}
 
-	return f
+func isPrimitive(attribute schema.Attribute) bool {
+	switch attribute.(type) {
+	case schema.NestedAttribute, schema.MapAttribute, schema.ListAttribute:
+		return false
+	default:
+		return true
+	}
 }
 
 func snakeToCamel(s string) string {
@@ -47,4 +94,19 @@ func snakeToCamel(s string) string {
 		words[i] = caser.String(words[i])
 	}
 	return strings.Join(words, "")
+}
+
+// var attrTypeMap = map[]string{
+// 	basetypes.StringType{}.String(): "String",
+// 	// basetypes.
+// }
+
+// func asdf[T attr.Type](thing T) {
+
+// }
+
+func attrToType(attr schema.Attribute) j.Code {
+	return j.Qual(Types, strings.Split(attr.GetType().TerraformType(context.Background()).String(), ".")[1])
+
+	// return attrTypeMap[attr.GetType().String()]
 }

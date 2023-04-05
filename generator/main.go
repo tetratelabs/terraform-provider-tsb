@@ -34,6 +34,12 @@ var resources = []resource{
 		WithClient("TeamsClient"),
 		WithSchema(tsbv2.UserSchema()),
 	),
+	*NewResource(
+		WithName("Cluster"),
+		WithPkgImportPath(TsbV2),
+		WithClient("ClustersClient"),
+		WithSchema(tsbv2.ClusterSchema()),
+	),
 }
 
 const (
