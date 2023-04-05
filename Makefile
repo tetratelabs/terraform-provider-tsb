@@ -31,8 +31,10 @@ format:
 licenser:
 	licenser apply Tetrate -r .
 
-gen:
+generator:
 	go run generator/*.go
+
+gen: generator licenser
 
 # WARNING!!! THESE CREATE ACTUAL RESOURCES
 # Run acceptance tests

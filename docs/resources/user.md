@@ -30,8 +30,8 @@ resource "tsb_user" "example" {
 ### Required
 
 - `login_name` (String) The username used in the login credentials.
-- `name` (String) The short name for the resource to be created.
-- `parent` (String) The parent ID of the user.
+- `name` (String) Short name of the User resource.
+- `parent` (String) The parent id for the User resource.
 
 ### Optional
 
@@ -42,7 +42,7 @@ resource "tsb_user" "example" {
 
 ### Read-Only
 
-- `id` (String) Fully-qualified name of the resource.
-- `source_type` (String) Where the user comes from. It can be a local user that exists only in TSB (LOCAL) or it can be a user that has been synchronized from the Identity Provider (LDAP).
+- `id` (String) Fully-qualified name of the User resource.
+- `source_type` (String) Where the user comes from. It can be a local user that exists only in TSB (type LOCAL) or it can be a user that has been synchronized from the Identity Provider (for example: type LDAP). <!-- terraform code generation tags +protoc-gen-terraform:computed +protoc-gen-terraform:enumdefault:4 -->
 
 

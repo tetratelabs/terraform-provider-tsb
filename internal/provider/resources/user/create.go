@@ -17,37 +17,34 @@ package user
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
-	tsbv2 "github.com/tetrateio/api/tsb/v2"
+	resource "github.com/hashicorp/terraform-plugin-framework/resource"
+	types "github.com/hashicorp/terraform-plugin-framework/types"
+	v2 "github.com/tetrateio/api/tsb/v2"
 )
 
 func (r *UserResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	// Load plan into the model
-	var model userResourceModel
+	var model UserModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &model)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	user, err := r.client.CreateUser(ctx, &tsbv2.CreateUserRequest{
-		Parent: model.Parent.ValueString(),
+	request := &v2.CreateUserRequest{
 		Name:   model.Name.ValueString(),
-		User: &tsbv2.User{
+		Parent: model.Parent.ValueString(),
+		User: &v2.User{
 			DisplayName: model.DisplayName.ValueString(),
-			LoginName:   model.LoginName.ValueString(),
+			Email:       model.Email.ValueString(),
 			FirstName:   model.FirstName.ValueString(),
 			LastName:    model.LastName.ValueString(),
-			Email:       model.Email.ValueString(),
-			SourceType:  tsbv2.SourceType(tsbv2.SourceType_value[model.SourceType.ValueString()]),
+			LoginName:   model.LoginName.ValueString(),
+			SourceType:  v2.SourceType(v2.SourceType_value[model.SourceType.ValueString()]),
 		},
-	})
+	}
+	user, err := r.client.CreateUser(ctx, request)
 	if err != nil {
 		resp.Diagnostics.AddError("Error creating User", "CreateUser request failed: "+err.Error())
 		return
 	}
-
 	model.Id = types.StringValue(user.Fqn)
-
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 }
