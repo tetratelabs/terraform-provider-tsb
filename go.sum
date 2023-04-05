@@ -345,12 +345,10 @@ github.com/stretchr/testify v1.6.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.7.2/go.mod h1:R6va5+xMeoiuVRoj+gSkQ7d3FALtqAAGI1FQKckRals=
 github.com/stretchr/testify v1.8.0 h1:pSgiaMZlXftHpm5L7V1+rVB+AZJydKsMxsQBIJw4PKk=
-github.com/tetrateio/api v0.0.0-20230331125457-b1cf473b55c2 h1:VDygcNjSk/ebwOf1K1ip5WNZG6IemqC7KPu2U8ekarg=
-github.com/tetrateio/api v0.0.0-20230331125457-b1cf473b55c2/go.mod h1:wobwFC1IAOKjuDQWDkpxYvk7EoEFcfmCvGauY+MwLR8=
-github.com/tetrateio/api v0.0.0-20230404150851-7758a10a6a00 h1:65zt1pPdZKqvYXubyCkog3+eiC22RZSR4z5eO3RyKGE=
-github.com/tetrateio/api v0.0.0-20230404150851-7758a10a6a00/go.mod h1:aaixS1aeh6hB/GaXYTBWoJAwaLKQtNgkHKMiqAllPN4=
 github.com/tetrateio/api v0.0.0-20230404164318-a1ab6329ff86 h1:krXw6gS/dZDFC7Znr7RRTPlug4vq0rOoEoBroRBures=
 github.com/tetrateio/api v0.0.0-20230404164318-a1ab6329ff86/go.mod h1:aaixS1aeh6hB/GaXYTBWoJAwaLKQtNgkHKMiqAllPN4=
+github.com/tetrateio/api v0.0.0-20230405190128-8916e4491331 h1:JiIlxiDX5xa5TgEhMj5rxpr6nVwWNmHRTRp4QlIj9Tk=
+github.com/tetrateio/api v0.0.0-20230405190128-8916e4491331/go.mod h1:aaixS1aeh6hB/GaXYTBWoJAwaLKQtNgkHKMiqAllPN4=
 github.com/tetrateio/tetrate v0.0.2-0.20230201205234-5d44a721cb40 h1:mK8DI/BiHXE2NaHpKvahBL1a3ey10B7UydRbfpwpH0o=
 github.com/tetrateio/tetrate v0.0.2-0.20230201205234-5d44a721cb40/go.mod h1:58JZLAOeIpCAAueeaCFpMV4dL1VjWdsO07m5wcaYHwc=
 github.com/tetratelabs/multierror v1.1.1 h1:84JfJvfmnYC5y4877Ag3c4PkCUmQwq6sGI6iRfBATKI=

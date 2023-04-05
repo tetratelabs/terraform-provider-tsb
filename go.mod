@@ -10,12 +10,10 @@ require (
 	github.com/hashicorp/terraform-plugin-go v0.14.3
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.26.1
 	github.com/samber/lo v1.38.1
-	github.com/tetrateio/api v0.0.0-20230404164318-a1ab6329ff86
+	github.com/tetrateio/api v0.0.0-20230405190128-8916e4491331
 	github.com/tetrateio/tetrate v0.0.2-0.20230201205234-5d44a721cb40
 	google.golang.org/grpc v1.51.0
 )
-
-require github.com/davecgh/go-spew v1.1.1 // indirect
 
 require (
 	github.com/Masterminds/goutils v1.1.1 // indirect

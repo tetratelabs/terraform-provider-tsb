@@ -16,43 +16,36 @@ package user
 
 import (
 	"context"
-
-	"github.com/hashicorp/terraform-plugin-framework/resource"
-	tsbv2 "github.com/tetrateio/api/tsb/v2"
+	resource "github.com/hashicorp/terraform-plugin-framework/resource"
 	v2 "github.com/tetrateio/api/tsb/v2"
 )
 
 func (r *UserResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	// Load plan into the model
-	var model userResourceModel
+	var model UserModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &model)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	// We need to run a get to retreive the latest etag and set fqn as its not going to be in the plan (only state)
-	user, err := r.client.GetUser(ctx, &tsbv2.GetUserRequest{Fqn: model.Id.ValueString()})
+	request := &v2.GetUserRequest{Fqn: model.Id.ValueString()}
+	user, err := r.client.GetUser(ctx, request)
 	if err != nil {
-		resp.Diagnostics.AddError("Error updating User", "GetUser request failed: "+err.Error())
+		resp.Diagnostics.AddError("Error updating User", "GetUserRequest failed: "+err.Error())
 		return
 	}
-
-	// Do the actual update
-	_, err = r.client.UpdateUser(ctx, &v2.User{
-		Fqn:         model.Id.ValueString(),
-		Etag:        user.Etag,
+	updateTo := &v2.User{
 		DisplayName: model.DisplayName.ValueString(),
-		LoginName:   model.LoginName.ValueString(),
-		FirstName:   model.FirstName.ValueString(),
-		LastName:    model.LastName.ValueString(),
 		Email:       model.Email.ValueString(),
-		SourceType:  tsbv2.SourceType(tsbv2.SourceType_value[model.SourceType.ValueString()]),
-	})
+		Etag:        user.Etag,
+		FirstName:   model.FirstName.ValueString(),
+		Fqn:         model.Id.ValueString(),
+		LastName:    model.LastName.ValueString(),
+		LoginName:   model.LoginName.ValueString(),
+		SourceType:  v2.SourceType(v2.SourceType_value[model.SourceType.ValueString()]),
+	}
+	_, err = r.client.UpdateUser(ctx, updateTo)
 	if err != nil {
-		resp.Diagnostics.AddError("Error updating User", "UpdateUser request failed: "+err.Error())
+		resp.Diagnostics.AddError("Error updating User", "UpdateUser failed: "+err.Error())
 		return
 	}
-
-	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 }

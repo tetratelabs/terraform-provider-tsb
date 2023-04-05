@@ -17,43 +17,38 @@ package user
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	resource "github.com/hashicorp/terraform-plugin-framework/resource"
 	types "github.com/hashicorp/terraform-plugin-framework/types"
-	tsbv2 "github.com/tetrateio/api/tsb/v2"
-	"github.com/tetrateio/tetrate/pkg/api"
-	"github.com/tetratelabs/terraform-provider-tsb/internal/helpers"
+	v2 "github.com/tetrateio/api/tsb/v2"
+	api "github.com/tetrateio/tetrate/pkg/api"
+	helpers "github.com/tetratelabs/terraform-provider-tsb/internal/helpers"
 )
 
 func (r *UserResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	// Load state into the model
-	var model userResourceModel
+	var model UserModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	user, err := r.client.GetUser(ctx, &tsbv2.GetUserRequest{Fqn: model.Id.ValueString()})
+	request := &v2.GetUserRequest{Fqn: model.Id.ValueString()}
+	user, err := r.client.GetUser(ctx, request)
 	if err != nil {
-		resp.Diagnostics.AddError("Error reading User", "GetUser request failed: "+err.Error())
+		resp.Diagnostics.AddError("Error reading User", "GetUserRequest failed: "+err.Error())
 		return
 	}
-
 	meta, err := helpers.FromFQN(api.UserKind, model.Id.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError("Error reading User", "FQN parsing failed: "+err.Error())
+		resp.Diagnostics.AddError("Error readingUser", "FQN parsing failed: "+err.Error())
 		return
 	}
-
 	model.Id = types.StringValue(user.Fqn)
 	model.Name = types.StringValue(meta.Name)
 	model.Parent = types.StringValue(helpers.ParentFQN(api.UserKind, meta))
-	model.DisplayName = types.StringValue(user.DisplayName)
-	model.Email = types.StringValue(user.Email)
 	model.FirstName = types.StringValue(user.FirstName)
+	model.SourceType = types.StringValue(v2.SourceType_name[int32(user.SourceType)])
+	model.DisplayName = types.StringValue(user.DisplayName)
 	model.LastName = types.StringValue(user.LastName)
 	model.LoginName = types.StringValue(user.LoginName)
-	model.SourceType = types.StringValue(tsbv2.SourceType_name[int32(user.SourceType)])
-
-	// Save model into Terraform model
+	model.Email = types.StringValue(user.Email)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 }

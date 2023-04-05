@@ -28,12 +28,12 @@ var resources = []resource{
 		WithClient("TenantsClient"),
 		WithSchema(tsbv2.TenantSchema()),
 	),
-	// *NewResource(
-	// 	WithName("User"),
-	// 	WithPkgImportPath(TsbV2),
-	// 	WithClient("TeamsClient"),
-	// 	WithSchema(tsbv2.UserSchema()),
-	// ),
+	*NewResource(
+		WithName("User"),
+		WithPkgImportPath(TsbV2),
+		WithClient("TeamsClient"),
+		WithSchema(tsbv2.UserSchema()),
+	),
 }
 
 const (
