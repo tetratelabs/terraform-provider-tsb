@@ -49,6 +49,7 @@ const (
 	TsbV2    = "github.com/tetrateio/api/tsb/v2"
 	Helpers  = "github.com/tetratelabs/terraform-provider-tsb/internal/helpers"
 	PkgAPI   = "github.com/tetrateio/tetrate/pkg/api"
+	SamberLo = "github.com/samber/lo"
 )
 
 func main() {

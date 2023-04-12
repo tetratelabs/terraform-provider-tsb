@@ -47,8 +47,13 @@ func genStruct(f *j.File, structName j.Code, attributes map[string]schema.Attrib
 			// case schema.ListAttribute:
 			// 	return fieldId.Add(j.Qual(Types, "List")).Add(tag)
 			case schema.ListNestedAttribute:
-				newStruct := genStruct(f, j.Id(snakeToCamel(fieldName+"_"+suffix+"_Model")), map[string]schema.Attribute{}, suffix+"_"+fieldName)
-				return fieldId.Add(j.List().Add(newStruct)).Add(tag)
+				asdf := make(map[string]schema.Attribute)
+				underlying := attribute.(schema.NestedAttribute).GetNestedObject().GetAttributes()
+				for k, v := range underlying {
+					asdf[k] = v
+				}
+				newStruct := genStruct(f, j.Id(snakeToCamel(fieldName+"_"+suffix+"_Model")), asdf, suffix+"_"+fieldName)
+				return fieldId.Add(j.Op("[]*").Add(newStruct)).Add(tag)
 			case schema.ListAttribute:
 				return fieldId.Qual(Types, "List").Add(tag)
 			case schema.MapAttribute:
