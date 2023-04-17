@@ -15,7 +15,7 @@
 package main
 
 import (
-	"context"
+	"fmt"
 	"strings"
 
 	j "github.com/dave/jennifer/jen"
@@ -57,8 +57,9 @@ func genStruct(f *j.File, structName j.Code, attributes map[string]schema.Attrib
 			case schema.ListAttribute:
 				return fieldId.Qual(Types, "List").Add(tag)
 			case schema.MapAttribute:
-				newStruct := genStruct(f, j.Id(snakeToCamel(fieldName+"_"+suffix+"_Model")), map[string]schema.Attribute{}, suffix+"_"+fieldName)
-				return fieldId.Add(newStruct).Add(tag)
+				// newStruct := genStruct(f, j.Id(snakeToCamel(fieldName+"_"+suffix+"_Model")), map[string]schema.Attribute{}, suffix+"_"+fieldName)
+				// return fieldId.Add(newStruct).Add(tag)
+				return fieldId.Qual(Types, "Map").Add(tag)
 			case schema.NestedAttribute:
 				underlying := attribute.(schema.NestedAttribute).GetNestedObject().GetAttributes()
 				// asdf := lo.MapEntries(underlying, func(k string, v fwschema.Attribute) (string, schema.Attribute) {
@@ -95,8 +96,17 @@ func isPrimitive(attribute schema.Attribute) bool {
 func snakeToCamel(s string) string {
 	words := strings.Split(s, "_")
 	caser := cases.Title(language.English)
+	caps := cases.Upper(language.English)
 	for i := range words {
-		words[i] = caser.String(words[i])
+		switch words[i] {
+		case "jwk", "fqn":
+			words[i] = caps.String(words[i])
+			if i > 0 {
+				words[i] = "_" + words[i]
+			}
+		default:
+			words[i] = caser.String(words[i])
+		}
 	}
 	return strings.Join(words, "")
 }
@@ -111,7 +121,18 @@ func snakeToCamel(s string) string {
 // }
 
 func attrToType(attr schema.Attribute) j.Code {
-	return j.Qual(Types, strings.Split(attr.GetType().TerraformType(context.Background()).String(), ".")[1])
-
-	// return attrTypeMap[attr.GetType().String()]
+	var attrType string
+	switch attr.(type) {
+	case schema.BoolAttribute:
+		attrType = "Bool"
+	case schema.StringAttribute:
+		attrType = "String"
+	case schema.Float64Attribute:
+		attrType = "Float64"
+	case schema.Int64Attribute:
+		attrType = "Int64"
+	default:
+		panic(fmt.Sprintf("Unknown primitive attribute type %v\n", attr))
+	}
+	return j.Qual(Types, attrType)
 }

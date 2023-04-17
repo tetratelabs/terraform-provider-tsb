@@ -15,8 +15,6 @@
 package main
 
 import (
-	"fmt"
-
 	j "github.com/dave/jennifer/jen"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/samber/lo"
@@ -84,8 +82,9 @@ func modelField(name string, attr schema.Attribute, r resource) j.Code {
 		// more information to the struct at schema generation time in the future.
 		return j.Qual(Types, "StringValue").Call(j.Qual(r.PkgImportPath, snakeToCamel(name)+"_name").Index(j.Int32().Call(j.Id(r.lowerName).Dot(snakeToCamel(name)))))
 	case schema.ListNestedAttribute:
-		return nil
+		return j.Nil()
 	default:
-		panic(fmt.Sprintf("%v isn't supported as a resource value", t))
+		// fmt.Printf("%v isn't supported as a resource value\n", t.GetType().String())
+		return j.Nil()
 	}
 }
