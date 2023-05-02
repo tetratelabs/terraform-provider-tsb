@@ -7,6 +7,9 @@ import (
 	v2 "github.com/tetrateio/api/tsb/v2"
 )
 
+func ptrify[T any](v T) *T {
+	return &v
+}
 func (r *UserResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var model UserModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &model)...)
