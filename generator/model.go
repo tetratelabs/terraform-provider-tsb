@@ -84,22 +84,21 @@ func genStruct(f *j.File, structName j.Code, attributes map[string]schema.Attrib
 	return structName
 }
 
-func isPrimitive(attribute schema.Attribute) bool {
-	switch attribute.(type) {
-	case schema.NestedAttribute, schema.MapAttribute, schema.ListAttribute:
-		return false
-	default:
-		return true
-	}
-}
-
 func snakeToCamel(s string) string {
+	// exceptions
+	switch s {
+	case "cni_overlays":
+		return "CniOverlays"
+	case "token_ttl":
+		return "TokenTtl"
+	}
 	words := strings.Split(s, "_")
 	caser := cases.Title(language.English)
 	caps := cases.Upper(language.English)
 	for i := range words {
 		switch words[i] {
-		case "jwk", "fqn":
+		// Acronyms...
+		case "jwk", "fqn", "ttl", "cni":
 			words[i] = caps.String(words[i])
 			if i > 0 {
 				words[i] = "_" + words[i]

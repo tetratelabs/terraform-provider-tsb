@@ -31,15 +31,21 @@ func (r *ClusterResource) Read(ctx context.Context, req resource.ReadRequest, re
 	model.Id = types.StringValue(cluster.Fqn)
 	model.Name = types.StringValue(meta.Name)
 	model.Parent = types.StringValue(helpers.ParentFQN(api.ClusterKind, meta))
-	model.Tier1Cluster = nil
-	model.Locality = nil
-	model.ServiceAccount = nil
-	model.TokenTtl = nil
+	model.TrustDomain = types.StringValue(pkgimportpath.Cluster_name[int32(rLowerName.Cluster)])
 	model.Description = types.StringValue(pkgimportpath.Cluster_name[int32(rLowerName.Cluster)])
-	model.Network = types.StringValue(pkgimportpath.Cluster_name[int32(rLowerName.Cluster)])
-	model.State = nil
-	model.DisplayName = types.StringValue(pkgimportpath.Cluster_name[int32(rLowerName.Cluster)])
+	model.InstallTemplate = nil
 	model.NamespaceScope = nil
+	model.Network = types.StringValue(pkgimportpath.Cluster_name[int32(rLowerName.Cluster)])
+	model.DisplayName = types.StringValue(pkgimportpath.Cluster_name[int32(rLowerName.Cluster)])
+	model.Labels = func() basetypes.MapValue {
+		r, diag := types.MapValue(ctx, labels.ElementType(ctx), cluster)
+		resp.Diagnostics.Append(diag...)
+		return r
+	}()
+	model.Locality = nil
+	model.TokenTtl = nil
+	model.State = nil
+	model.Tier1Cluster = nil
 	model.Namespaces = func() []*namespaces {
 		tmp := make([]*namespaces, len(cluster))
 		for _, n := range cluster {
@@ -47,12 +53,6 @@ func (r *ClusterResource) Read(ctx context.Context, req resource.ReadRequest, re
 		}
 		return tmp
 	}()
-	model.InstallTemplate = nil
-	model.Labels = func() basetypes.MapValue {
-		r, diag := types.MapValue(ctx, labels.ElementType(ctx), cluster)
-		resp.Diagnostics.Append(diag...)
-		return r
-	}()
-	model.TrustDomain = types.StringValue(pkgimportpath.Cluster_name[int32(rLowerName.Cluster)])
+	model.ServiceAccount = nil
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 }

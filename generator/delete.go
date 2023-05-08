@@ -15,7 +15,6 @@
 package main
 
 import (
-	"github.com/dave/jennifer/jen"
 	j "github.com/dave/jennifer/jen"
 )
 
@@ -28,14 +27,14 @@ func genDelete(r resource) *j.File {
 		Block(
 			j.Var().Id("model").Add(r.modelId),
 			j.Id("resp").Dot("Diagnostics").Dot("Append").Call(
-				j.Id("req").Dot("State").Dot("Get").Call(j.Id("ctx"), jen.Op("&").Id("model")).Op("..."),
+				j.Id("req").Dot("State").Dot("Get").Call(j.Id("ctx"), j.Op("&").Id("model")).Op("..."),
 			),
 			j.If(j.Id("resp").Dot("Diagnostics").Dot("HasError").Call()).Block(j.Return()),
 			j.If(
 				j.List(j.Id("_"), j.Id("err")).Op(":=").Id("r").Dot("client").Dot("Delete"+r.Name).Call(
 					j.Id("ctx"),
 					j.Op("&").Qual(r.PkgImportPath, "Delete"+r.Name+"Request").Values(
-						j.Dict{j.Id("Fqn"): jen.Id("model").Dot("Id").Dot("ValueString").Call()},
+						j.Dict{j.Id("Fqn"): j.Id("model").Dot("Id").Dot("ValueString").Call()},
 					),
 				),
 				j.Err().Op("!=").Nil(),

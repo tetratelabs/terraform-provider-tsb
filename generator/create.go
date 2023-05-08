@@ -108,7 +108,7 @@ func getGoTypes(s attr.Type) (ptypes.TestInterface, error) {
 		return st, nil
 	}
 	// panic elsewhere
-	return nil, fmt.Errorf("Could not convert type")
+	return nil, fmt.Errorf("could not convert type")
 }
 
 func buildInnerResource(s map[string]schema.Attribute, prefixes []string, pkgImportPath string) j.Dict {
@@ -119,6 +119,10 @@ func buildInnerResource(s map[string]schema.Attribute, prefixes []string, pkgImp
 		typeInfo, err := getGoTypes(v.GetType())
 		if err != nil {
 			panic(fmt.Sprintf("Failed to get custom type for %q\n", k))
+		}
+		// TODO: fix oneofs
+		if typeInfo.IsOneOf() {
+			continue
 		}
 		// desc := strings.Split(v.GetDescription(), "!!")
 		// gotype := desc[len(desc)-1]
