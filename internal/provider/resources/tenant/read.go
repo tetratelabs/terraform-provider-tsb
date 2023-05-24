@@ -7,7 +7,6 @@ import (
 	v2 "github.com/tetrateio/api/tsb/v2"
 	api "github.com/tetrateio/tetrate/pkg/api"
 	helpers "github.com/tetratelabs/terraform-provider-tsb/internal/helpers"
-	pkgimportpath "pkgimportpath"
 )
 
 func (r *TenantResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -30,8 +29,8 @@ func (r *TenantResource) Read(ctx context.Context, req resource.ReadRequest, res
 	model.Id = types.StringValue(tenant.Fqn)
 	model.Name = types.StringValue(meta.Name)
 	model.Parent = types.StringValue(helpers.ParentFQN(api.TenantKind, meta))
-	model.Description = types.StringValue(pkgimportpath.Cluster_name[int32(rLowerName.Cluster)])
-	model.DisplayName = types.StringValue(pkgimportpath.Cluster_name[int32(rLowerName.Cluster)])
-	model.SecurityDomain = types.StringValue(pkgimportpath.Cluster_name[int32(rLowerName.Cluster)])
+	model.SecurityDomain = types.StringValue(tenant[int32(tenant)])
+	model.Description = types.StringValue(tenant[int32(tenant)])
+	model.DisplayName = types.StringValue(tenant[int32(tenant)])
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 }

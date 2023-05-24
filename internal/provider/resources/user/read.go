@@ -7,7 +7,6 @@ import (
 	v2 "github.com/tetrateio/api/tsb/v2"
 	api "github.com/tetrateio/tetrate/pkg/api"
 	helpers "github.com/tetratelabs/terraform-provider-tsb/internal/helpers"
-	pkgimportpath "pkgimportpath"
 )
 
 func (r *UserResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -30,11 +29,11 @@ func (r *UserResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	model.Id = types.StringValue(user.Fqn)
 	model.Name = types.StringValue(meta.Name)
 	model.Parent = types.StringValue(helpers.ParentFQN(api.UserKind, meta))
-	model.SourceType = types.StringValue(pkgimportpath.Cluster_name[int32(rLowerName.Cluster)])
-	model.LastName = types.StringValue(pkgimportpath.Cluster_name[int32(rLowerName.Cluster)])
-	model.DisplayName = types.StringValue(pkgimportpath.Cluster_name[int32(rLowerName.Cluster)])
-	model.Email = types.StringValue(pkgimportpath.Cluster_name[int32(rLowerName.Cluster)])
-	model.FirstName = types.StringValue(pkgimportpath.Cluster_name[int32(rLowerName.Cluster)])
-	model.LoginName = types.StringValue(pkgimportpath.Cluster_name[int32(rLowerName.Cluster)])
+	model.SourceType = types.StringValue(user[int32(user)])
+	model.LoginName = types.StringValue(user[int32(user)])
+	model.Email = types.StringValue(user[int32(user)])
+	model.FirstName = types.StringValue(user[int32(user)])
+	model.LastName = types.StringValue(user[int32(user)])
+	model.DisplayName = types.StringValue(user[int32(user)])
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 }

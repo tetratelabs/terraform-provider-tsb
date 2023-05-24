@@ -36,7 +36,7 @@ func WithName(name string) resourceOption {
 		r.Name = name
 		r.lowerName = strings.ToLower(name)
 		r.structId = j.Id(r.Name + "Resource")
-		r.modelId = j.Id(r.Name + "Model")
+		r.modelId = r.Name + "Model"
 	}
 }
 
@@ -65,13 +65,13 @@ type resource struct {
 	Schema        schema.Schema
 
 	structId  j.Code
-	modelId   j.Code
+	modelId   string
 	lowerName string
 }
 
 func (r resource) LoadPlanIntoModel() j.Statement {
 	return []j.Code{
-		j.Var().Id("model").Add(r.modelId),
+		j.Var().Id("model").Id(r.modelId),
 		j.Id("resp").Dot("Diagnostics").Dot("Append").Call(
 			j.Id("req").Dot("Plan").Dot("Get").Call(j.Id("ctx"), j.Op("&").Id("model")).Op("..."),
 		),
@@ -81,7 +81,7 @@ func (r resource) LoadPlanIntoModel() j.Statement {
 
 func (r resource) LoadStateIntoModel() j.Statement {
 	return []j.Code{
-		j.Var().Id("model").Add(r.modelId),
+		j.Var().Id("model").Id(r.modelId),
 		j.Id("resp").Dot("Diagnostics").Dot("Append").Call(
 			j.Id("req").Dot("State").Dot("Get").Call(j.Id("ctx"), j.Op("&").Id("model")).Op("..."),
 		),

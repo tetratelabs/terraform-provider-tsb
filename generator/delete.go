@@ -25,7 +25,7 @@ func genDelete(r resource) *j.File {
 		Parens(j.Id("r").Op("*").Add(r.structId)).Id("Delete").
 		Params(j.Id("ctx").Qual("context", "Context"), j.Id("req").Qual(Resource, "DeleteRequest"), j.Id("resp").Op("*").Qual(Resource, "DeleteResponse")).
 		Block(
-			j.Var().Id("model").Add(r.modelId),
+			j.Var().Id("model").Id(r.modelId),
 			j.Id("resp").Dot("Diagnostics").Dot("Append").Call(
 				j.Id("req").Dot("State").Dot("Get").Call(j.Id("ctx"), j.Op("&").Id("model")).Op("..."),
 			),
