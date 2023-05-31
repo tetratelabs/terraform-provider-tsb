@@ -62,7 +62,7 @@ func main() {
 		"resource.go": genResource,
 		"model.go":    genModel,
 		"import.go":   genImport,
-		"create.go":   genImport,
+		"create.go":   genCreate,
 		"read.go":     genRead,
 		"update.go":   genUpdate,
 		"delete.go":   genDelete,

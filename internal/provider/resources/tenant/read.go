@@ -29,8 +29,8 @@ func (r *TenantResource) Read(ctx context.Context, req resource.ReadRequest, res
 	model.Id = types.StringValue(tenant.Fqn)
 	model.Name = types.StringValue(meta.Name)
 	model.Parent = types.StringValue(helpers.ParentFQN(api.TenantKind, meta))
-	model.SecurityDomain = types.StringValue(tenant[int32(tenant)])
-	model.Description = types.StringValue(tenant[int32(tenant)])
-	model.DisplayName = types.StringValue(tenant[int32(tenant)])
+	model.DisplayName = types.StringValue(tenant.DisplayName)
+	model.SecurityDomain = types.StringValue(tenant.SecurityDomain)
+	model.Description = types.StringValue(tenant.Description)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 }

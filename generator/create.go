@@ -215,7 +215,7 @@ func buildInnerResource(s map[string]schema.Attribute, prefixes []string, pkgImp
 			// )))
 			res[j.Id(snakeToCamel(k))] = j.Func().Call().Op("[]*").Qual(goimport, gotype).Block(
 				j.Id("a").Op(":=").Make(j.Op("[]*").Qual(goimport, gotype), j.Lit(0), j.Len(modelPath.Clone())),
-				j.For(j.Id("i").Op(",").Id(k).Op(":=").Range().Add(modelPath.Clone())).Block(
+				j.For(j.List(j.Id("i"), j.Id(k)).Op(":=").Range().Add(modelPath.Clone())).Block(
 					j.Id("a").Index(j.Id("i")).Op("=").Op("&").Qual(goimport, gotype).Values(
 						buildInnerResource(underlying, []string{k}, pkgImportPath),
 					),

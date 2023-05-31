@@ -3,15 +3,14 @@ package user
 import types "github.com/hashicorp/terraform-plugin-framework/types"
 
 // tfsdk typed model definition
-// Schema path
 type UserModel struct {
-	SourceType  types.String `tfsdk:"source_type"`
-	LastName    types.String `tfsdk:"last_name"`
-	Parent      types.String `tfsdk:"parent"`
-	Email       types.String `tfsdk:"email"`
-	FirstName   types.String `tfsdk:"first_name"`
 	Id          types.String `tfsdk:"id"`
-	DisplayName types.String `tfsdk:"display_name"`
+	SourceType  types.String `tfsdk:"source_type"`
+	Email       types.String `tfsdk:"email"`
 	Name        types.String `tfsdk:"name"`
+	Parent      types.String `tfsdk:"parent"`
+	DisplayName types.String `tfsdk:"display_name"`
+	FirstName   types.String `tfsdk:"first_name"`
+	LastName    types.String `tfsdk:"last_name"`
 	LoginName   types.String `tfsdk:"login_name"`
 }
