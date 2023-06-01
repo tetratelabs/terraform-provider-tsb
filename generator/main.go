@@ -45,13 +45,14 @@ var resources = []resource{
 }
 
 const (
-	Resource = "github.com/hashicorp/terraform-plugin-framework/resource"
-	Types    = "github.com/hashicorp/terraform-plugin-framework/types"
-	Path     = "github.com/hashicorp/terraform-plugin-framework/path"
-	TsbV2    = "github.com/tetrateio/api/tsb/v2"
-	Helpers  = "github.com/tetratelabs/terraform-provider-tsb/internal/helpers"
-	PkgAPI   = "github.com/tetrateio/tetrate/pkg/api"
-	SamberLo = "github.com/samber/lo"
+	Resource  = "github.com/hashicorp/terraform-plugin-framework/resource"
+	Types     = "github.com/hashicorp/terraform-plugin-framework/types"
+	BaseTypes = "github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+	Path      = "github.com/hashicorp/terraform-plugin-framework/path"
+	TsbV2     = "github.com/tetrateio/api/tsb/v2"
+	Helpers   = "github.com/tetratelabs/terraform-provider-tsb/internal/helpers"
+	PkgAPI    = "github.com/tetrateio/tetrate/pkg/api"
+	SamberLo  = "github.com/samber/lo"
 )
 
 func main() {

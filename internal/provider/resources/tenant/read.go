@@ -1,10 +1,10 @@
 package tenant
 
 import (
-	basetypes "basetypes"
 	"context"
 	resource "github.com/hashicorp/terraform-plugin-framework/resource"
 	types "github.com/hashicorp/terraform-plugin-framework/types"
+	basetypes "github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	v2 "github.com/tetrateio/api/tsb/v2"
 	api "github.com/tetrateio/tetrate/pkg/api"
 	helpers "github.com/tetratelabs/terraform-provider-tsb/internal/helpers"
@@ -30,21 +30,21 @@ func (r *TenantResource) Read(ctx context.Context, req resource.ReadRequest, res
 	model.Id = types.StringValue(tenant.Fqn)
 	model.Name = types.StringValue(meta.Name)
 	model.Parent = types.StringValue(helpers.ParentFQN(api.TenantKind, meta))
+	model.DisplayName = types.StringValue(tenant.DisplayName)
+	model.SecurityDomain = types.StringValue(tenant.SecurityDomain)
 	model.ConfigGenerationMetadata = ConfigGenerationMetadata_Model{
 		Annotations: func() basetypes.MapValue {
-			r, diag := types.MapValueFrom(ctx, model.ConfigGenerationMetadata.Annotations.ElementType(ctx), tenant.ConfigGenerationMetadata.Annotations)
+			r, diag := types.MapValueFrom(ctx, basetypes.StringType{}, tenant.ConfigGenerationMetadata.Annotations)
 			resp.Diagnostics.Append(diag...)
 			return r
 		}(),
 		Labels: func() basetypes.MapValue {
-			r, diag := types.MapValueFrom(ctx, model.ConfigGenerationMetadata.Labels.ElementType(ctx), tenant.ConfigGenerationMetadata.Labels)
+			r, diag := types.MapValueFrom(ctx, basetypes.StringType{}, tenant.ConfigGenerationMetadata.Labels)
 			resp.Diagnostics.Append(diag...)
 			return r
 		}(),
 	}
 	model.DeletionProtectionEnabled = types.BoolValue(tenant.DeletionProtectionEnabled)
 	model.Description = types.StringValue(tenant.Description)
-	model.DisplayName = types.StringValue(tenant.DisplayName)
-	model.SecurityDomain = types.StringValue(tenant.SecurityDomain)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 }

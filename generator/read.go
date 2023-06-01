@@ -16,6 +16,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	j "github.com/dave/jennifer/jen"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -117,27 +118,27 @@ func modelField(pkgImportPath string, modelPath []string, apiPath []string, attr
 		return j.Qual(Types, "BoolValue").Call(a2c())
 	case schema.ListNestedAttribute:
 		inner := j.Dict{}
+		iteree := strings.ToLower(modelPath[len(modelPath)-1])
 		for k, v := range t.NestedObject.Attributes {
-			inner[j.Id(snakeToCamel(k))] = modelField(pkgImportPath, append(modelPath, k), append(apiPath, snakeToCamel(k)), v) //j.Lit(fmt.Sprintf("modelField(append(%v, x), append(%v, x), %v)", modelPath, apiPath, v))
-
+			inner[j.Id(snakeToCamel(k))] = modelField(pkgImportPath, append(modelPath, k), []string{iteree, k}, v) //j.Lit(fmt.Sprintf("modelField(append(%v, x), append(%v, x), %v)", modelPath, apiPath, v))
 		}
 		return j.Func().Call().Op("[]*").Add(m2c()).Block(
 			j.Id("size").Op(":=").Len(a2c()),
 			j.Id("tmp").Op(":=").Make(j.Op("[]*").Add(m2c()), j.Id("size"), j.Id("size")),
-			j.For(j.List(j.Id("i"), j.Id("v")).Op(":=").Range().Add(a2c())).Block(
+			j.For(j.List(j.Id("i"), j.Id(iteree)).Op(":=").Range().Add(a2c())).Block(
 				j.Id("tmp").Index(j.Id("i")).Op("=").Op("&").Add(m2c()).Values(inner),
 			),
-			j.Comment("asdfasd"),
 			j.Return(j.Id("tmp")),
 		).Call()
 	// 	return j.Lit(fmt.Sprintf("%v / %v", typeInfo.GetGoImport(), typeInfo.GetGoType()))
 	case schema.ListAttribute:
-		return j.Func().Call().Qual("basetypes", "ListValue").Block(
+		return j.Func().Call().Qual(BaseTypes, "ListValue").Block(
 			j.List(j.Id("r"), j.Id("diag")).Op(":=").Qual(Types, "ListValueFrom").Call(
 				j.Id("ctx"),
-				j.Id("model").Add(lo.Map(modelPath, func(s string, _ int) j.Code {
-					return j.Dot(snakeToCamel(s))
-				})...).Dot("ElementType").Call(j.Id("ctx")),
+				j.Id(t.ElementType.String()).Values(),
+				// j.Id("model").Add(lo.Map(modelPath, func(s string, _ int) j.Code {
+				// 	return j.Dot(snakeToCamel(s))
+				// })...).Dot("ElementType").Call(j.Id("ctx")),
 				a2c(),
 			),
 			j.Id("resp").Dot("Diagnostics").Dot("Append").Call(j.Id("diag").Op("...")),
@@ -154,14 +155,15 @@ func modelField(pkgImportPath string, modelPath []string, apiPath []string, attr
 	// case schema.MapNestedAttribute:
 	// 	return j.Lit(fmt.Sprintf("%v / %v", typeInfo.GetGoImport(), typeInfo.GetGoType()))
 	case schema.MapAttribute:
-		return j.Func().Call().Qual("basetypes", "MapValue").Block(
+		return j.Func().Call().Qual(BaseTypes, "MapValue").Block(
 			// j.Comment("TODO: populate map with attr.Valueified values"),
 			// j.Id("tmp").Op(":=").Make(j.Map(j.String()).Qual("attr", "Value")),
 			j.List(j.Id("r"), j.Id("diag")).Op(":=").Qual(Types, "MapValueFrom").Call(
 				j.Id("ctx"),
-				j.Id("model").Add(lo.Map(modelPath, func(s string, _ int) j.Code {
-					return j.Dot(snakeToCamel(s))
-				})...).Dot("ElementType").Call(j.Id("ctx")),
+				// j.Id("model").Add(lo.Map(modelPath, func(s string, _ int) j.Code {
+				// 	return j.Dot(snakeToCamel(s))
+				// })...).Dot("ElementType").Call(j.Id("ctx")),
+				j.Id(t.ElementType.String()).Values(),
 				a2c(),
 			),
 			j.Id("resp").Dot("Diagnostics").Dot("Append").Call(j.Id("diag").Op("...")),
@@ -170,7 +172,7 @@ func modelField(pkgImportPath string, modelPath []string, apiPath []string, attr
 	case schema.SingleNestedAttribute:
 		inner := j.Dict{}
 		for k, v := range t.Attributes {
-			inner[j.Id(snakeToCamel(k))] = modelField(pkgImportPath, append(modelPath, k), append(apiPath, snakeToCamel(k)), v) //j.Lit(fmt.Sprintf("modelField(append(%v, x), append(%v, x), %v)", modelPath, apiPath, v))
+			inner[j.Id(snakeToCamel(k))] = modelField(pkgImportPath, append(modelPath, k), append(apiPath, k), v) //j.Lit(fmt.Sprintf("modelField(append(%v, x), append(%v, x), %v)", modelPath, apiPath, v))
 		}
 
 		return m2c().Values(inner)
