@@ -31,7 +31,7 @@ func (r *ClusterResource) Update(ctx context.Context, req resource.UpdateRequest
 			resp.Diagnostics.Append(model.Labels.ElementsAs(ctx, &tmp, false)...)
 			return tmp
 		}(),
-		Locality: &v2.Cluster_Locality{Region: model.Locality.Region.ValueString()},
+		Locality: &v2.Locality{Region: model.Locality.Region.ValueString()},
 		NamespaceScope: &v2.NamespaceScoping{
 			Exceptions: func() []string {
 				tmp := make([]string, 0, len(model.NamespaceScope.Exceptions.Elements()))
@@ -140,6 +140,7 @@ func (r *ClusterResource) Update(ctx context.Context, req resource.UpdateRequest
 			}(),
 		},
 		State: &v2.Cluster_State{
+			DiscoveredLocality: &v2.Locality{Region: model.State.DiscoveredLocality.Region.ValueString()},
 			IstioVersions: func() []string {
 				tmp := make([]string, 0, len(model.State.IstioVersions.Elements()))
 				resp.Diagnostics.Append(model.State.IstioVersions.ElementsAs(ctx, &tmp, false)...)

@@ -1,6 +1,7 @@
 package tenant
 
 import (
+	basetypes "basetypes"
 	"context"
 	resource "github.com/hashicorp/terraform-plugin-framework/resource"
 	types "github.com/hashicorp/terraform-plugin-framework/types"
@@ -29,8 +30,21 @@ func (r *TenantResource) Read(ctx context.Context, req resource.ReadRequest, res
 	model.Id = types.StringValue(tenant.Fqn)
 	model.Name = types.StringValue(meta.Name)
 	model.Parent = types.StringValue(helpers.ParentFQN(api.TenantKind, meta))
+	model.ConfigGenerationMetadata = ConfigGenerationMetadata_Model{
+		Annotations: func() basetypes.MapValue {
+			r, diag := types.MapValueFrom(ctx, model.ConfigGenerationMetadata.Annotations.ElementType(ctx), tenant.ConfigGenerationMetadata.Annotations)
+			resp.Diagnostics.Append(diag...)
+			return r
+		}(),
+		Labels: func() basetypes.MapValue {
+			r, diag := types.MapValueFrom(ctx, model.ConfigGenerationMetadata.Labels.ElementType(ctx), tenant.ConfigGenerationMetadata.Labels)
+			resp.Diagnostics.Append(diag...)
+			return r
+		}(),
+	}
+	model.DeletionProtectionEnabled = types.BoolValue(tenant.DeletionProtectionEnabled)
+	model.Description = types.StringValue(tenant.Description)
 	model.DisplayName = types.StringValue(tenant.DisplayName)
 	model.SecurityDomain = types.StringValue(tenant.SecurityDomain)
-	model.Description = types.StringValue(tenant.Description)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 }

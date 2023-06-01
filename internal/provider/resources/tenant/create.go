@@ -4,6 +4,7 @@ import (
 	"context"
 	resource "github.com/hashicorp/terraform-plugin-framework/resource"
 	types "github.com/hashicorp/terraform-plugin-framework/types"
+	v21 "github.com/tetrateio/api/tsb/types/v2"
 	v2 "github.com/tetrateio/api/tsb/v2"
 )
 
@@ -20,9 +21,22 @@ func (r *TenantResource) Create(ctx context.Context, req resource.CreateRequest,
 		Name:   model.Name.ValueString(),
 		Parent: model.Parent.ValueString(),
 		Tenant: &v2.Tenant{
-			Description:    model.Description.ValueString(),
-			DisplayName:    model.DisplayName.ValueString(),
-			SecurityDomain: model.SecurityDomain.ValueString(),
+			ConfigGenerationMetadata: &v21.ConfigGenerationMetadata{
+				Annotations: func() map[string]string {
+					tmp := make(map[string]string)
+					resp.Diagnostics.Append(model.ConfigGenerationMetadata.Annotations.ElementsAs(ctx, &tmp, false)...)
+					return tmp
+				}(),
+				Labels: func() map[string]string {
+					tmp := make(map[string]string)
+					resp.Diagnostics.Append(model.ConfigGenerationMetadata.Labels.ElementsAs(ctx, &tmp, false)...)
+					return tmp
+				}(),
+			},
+			DeletionProtectionEnabled: model.DeletionProtectionEnabled.ValueBool(),
+			Description:               model.Description.ValueString(),
+			DisplayName:               model.DisplayName.ValueString(),
+			SecurityDomain:            model.SecurityDomain.ValueString(),
 		},
 	}
 	tenant, err := r.client.CreateTenant(ctx, request)

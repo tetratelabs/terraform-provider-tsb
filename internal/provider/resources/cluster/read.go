@@ -30,7 +30,41 @@ func (r *ClusterResource) Read(ctx context.Context, req resource.ReadRequest, re
 	model.Id = types.StringValue(cluster.Fqn)
 	model.Name = types.StringValue(meta.Name)
 	model.Parent = types.StringValue(helpers.ParentFQN(api.ClusterKind, meta))
+	model.TrustDomain = types.StringValue(cluster.TrustDomain)
+	model.TokenTtl = TokenTtl_Model{
+		Nanos:   types.Int64Value(int64(cluster.TokenTtl.Nanos)),
+		Seconds: types.Int64Value(int64(cluster.TokenTtl.Seconds)),
+	}
+	model.NamespaceScope = NamespaceScope_Model{
+		Exceptions: func() basetypes.ListValue {
+			r, diag := types.ListValueFrom(ctx, model.NamespaceScope.Exceptions.ElementType(ctx), cluster.NamespaceScope.Exceptions)
+			resp.Diagnostics.Append(diag...)
+			return r
+		}(),
+		Scope: types.StringValue(v2.NamespaceScoping_Scope_name[int32(cluster.NamespaceScope.Scope)]),
+	}
+	model.Locality = Locality_Model{Region: types.StringValue(cluster.Locality.Region)}
+	model.ServiceAccount = ServiceAccount_Model{
+		Description: types.StringValue(cluster.ServiceAccount.Description),
+		DisplayName: types.StringValue(cluster.ServiceAccount.Displayname),
+		Keys: func() []*ServiceAccount_Keys_Model {
+			size := len(cluster.ServiceAccount.Keys)
+			tmp := make([]*ServiceAccount_Keys_Model, size, size)
+			for i, v := range cluster.ServiceAccount.Keys {
+				tmp[i] = &ServiceAccount_Keys_Model{
+					DefaultToken: types.StringValue(cluster.ServiceAccount.Keys.Defaulttoken),
+					Encoding:     types.StringValue(v2.ServiceAccount_KeyPair_Encoding_name[int32(cluster.ServiceAccount.Keys.Encoding)]),
+					Id:           types.StringValue(cluster.ServiceAccount.Keys.Id),
+					PrivateKey:   types.StringValue(cluster.ServiceAccount.Keys.Privatekey),
+					PublicKey:    types.StringValue(cluster.ServiceAccount.Keys.Publickey),
+				}
+			}
+			// asdfasd
+			return tmp
+		}(),
+	}
 	model.State = State_Model{
+		DiscoveredLocality: State_DiscoveredLocality_Model{Region: types.StringValue(cluster.State.Discoveredlocality.Region)},
 		IstioVersions: func() basetypes.ListValue {
 			r, diag := types.ListValueFrom(ctx, model.State.IstioVersions.ElementType(ctx), cluster.State.Istioversions)
 			resp.Diagnostics.Append(diag...)
@@ -49,6 +83,10 @@ func (r *ClusterResource) Read(ctx context.Context, req resource.ReadRequest, re
 		resp.Diagnostics.Append(diag...)
 		return r
 	}()
+	model.Network = types.StringValue(cluster.Network)
+	model.DisplayName = types.StringValue(cluster.DisplayName)
+	model.Tier1Cluster = Tier1Cluster_Model{Value: types.BoolValue(cluster.Tier1Cluster.Value)}
+	model.Description = types.StringValue(cluster.Description)
 	model.Namespaces = func() []*Namespaces_Model {
 		size := len(cluster.Namespaces)
 		tmp := make([]*Namespaces_Model, size, size)
@@ -138,42 +176,5 @@ func (r *ClusterResource) Read(ctx context.Context, req resource.ReadRequest, re
 		// asdfasd
 		return tmp
 	}()
-	model.Locality = Locality_Model{Region: types.StringValue(cluster.Locality.Region)}
-	model.DisplayName = types.StringValue(cluster.DisplayName)
-	model.NamespaceScope = NamespaceScope_Model{
-		Exceptions: func() basetypes.ListValue {
-			r, diag := types.ListValueFrom(ctx, model.NamespaceScope.Exceptions.ElementType(ctx), cluster.NamespaceScope.Exceptions)
-			resp.Diagnostics.Append(diag...)
-			return r
-		}(),
-		Scope: types.StringValue(v2.NamespaceScoping_Scope_name[int32(cluster.NamespaceScope.Scope)]),
-	}
-	model.TokenTtl = TokenTtl_Model{
-		Nanos:   types.Int64Value(int64(cluster.TokenTtl.Nanos)),
-		Seconds: types.Int64Value(int64(cluster.TokenTtl.Seconds)),
-	}
-	model.ServiceAccount = ServiceAccount_Model{
-		Description: types.StringValue(cluster.ServiceAccount.Description),
-		DisplayName: types.StringValue(cluster.ServiceAccount.Displayname),
-		Keys: func() []*ServiceAccount_Keys_Model {
-			size := len(cluster.ServiceAccount.Keys)
-			tmp := make([]*ServiceAccount_Keys_Model, size, size)
-			for i, v := range cluster.ServiceAccount.Keys {
-				tmp[i] = &ServiceAccount_Keys_Model{
-					DefaultToken: types.StringValue(cluster.ServiceAccount.Keys.Defaulttoken),
-					Encoding:     types.StringValue(v2.ServiceAccount_KeyPair_Encoding_name[int32(cluster.ServiceAccount.Keys.Encoding)]),
-					Id:           types.StringValue(cluster.ServiceAccount.Keys.Id),
-					PrivateKey:   types.StringValue(cluster.ServiceAccount.Keys.Privatekey),
-					PublicKey:    types.StringValue(cluster.ServiceAccount.Keys.Publickey),
-				}
-			}
-			// asdfasd
-			return tmp
-		}(),
-	}
-	model.TrustDomain = types.StringValue(cluster.TrustDomain)
-	model.Network = types.StringValue(cluster.Network)
-	model.Tier1Cluster = Tier1Cluster_Model{Value: types.BoolValue(cluster.Tier1Cluster.Value)}
-	model.Description = types.StringValue(cluster.Description)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 }
