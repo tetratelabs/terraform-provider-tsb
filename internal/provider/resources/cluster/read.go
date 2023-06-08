@@ -30,11 +30,48 @@ func (r *ClusterResource) Read(ctx context.Context, req resource.ReadRequest, re
 	model.Id = types.StringValue(cluster.Fqn)
 	model.Name = types.StringValue(meta.Name)
 	model.Parent = types.StringValue(helpers.ParentFQN(api.ClusterKind, meta))
-	model.Network = types.StringValue(cluster.Network)
+	model.ServiceAccount = ServiceAccount_Model{
+		Description: types.StringValue(cluster.ServiceAccount.Description),
+		DisplayName: types.StringValue(cluster.ServiceAccount.DisplayName),
+		Keys: func() []*ServiceAccount_Keys_Model {
+			size := len(cluster.ServiceAccount.Keys)
+			tmp := make([]*ServiceAccount_Keys_Model, size, size)
+			for i, keys := range cluster.ServiceAccount.Keys {
+				tmp[i] = &ServiceAccount_Keys_Model{
+					DefaultToken: types.StringValue(keys.DefaultToken),
+					Encoding:     types.StringValue(v2.ServiceAccount_KeyPair_Encoding_name[int32(keys.Encoding)]),
+					Id:           types.StringValue(keys.Id),
+					PrivateKey:   types.StringValue(keys.PrivateKey),
+					PublicKey:    types.StringValue(keys.PublicKey),
+				}
+			}
+			return tmp
+		}(),
+	}
+	model.TrustDomain = types.StringValue(cluster.TrustDomain)
+	model.Locality = Locality_Model{Region: types.StringValue(cluster.Locality.Region)}
 	model.TokenTtl = TokenTtl_Model{
 		Nanos:   types.Int64Value(int64(cluster.TokenTtl.Nanos)),
 		Seconds: types.Int64Value(int64(cluster.TokenTtl.Seconds)),
 	}
+	model.State = State_Model{
+		DiscoveredLocality: State_DiscoveredLocality_Model{Region: types.StringValue(cluster.State.DiscoveredLocality.Region)},
+		IstioVersions: func() basetypes.ListValue {
+			r, diag := types.ListValueFrom(ctx, basetypes.StringType{}, cluster.State.IstioVersions)
+			resp.Diagnostics.Append(diag...)
+			return r
+		}(),
+		LastSyncTime: State_LastSyncTime_Model{
+			Nanos:   types.Int64Value(int64(cluster.State.LastSyncTime.Nanos)),
+			Seconds: types.Int64Value(int64(cluster.State.LastSyncTime.Seconds)),
+		},
+		Provider:     types.StringValue(cluster.State.Provider),
+		TsbCpVersion: types.StringValue(cluster.State.TsbCpVersion),
+		XcpVersion:   types.StringValue(cluster.State.XcpVersion),
+	}
+	model.Description = types.StringValue(cluster.Description)
+	model.DisplayName = types.StringValue(cluster.DisplayName)
+	model.Network = types.StringValue(cluster.Network)
 	model.Namespaces = func() []*Namespaces_Model {
 		size := len(cluster.Namespaces)
 		tmp := make([]*Namespaces_Model, size, size)
@@ -120,31 +157,11 @@ func (r *ClusterResource) Read(ctx context.Context, req resource.ReadRequest, re
 		}
 		return tmp
 	}()
-	model.TrustDomain = types.StringValue(cluster.TrustDomain)
-	model.DisplayName = types.StringValue(cluster.DisplayName)
-	model.State = State_Model{
-		DiscoveredLocality: State_DiscoveredLocality_Model{Region: types.StringValue(cluster.State.DiscoveredLocality.Region)},
-		IstioVersions: func() basetypes.ListValue {
-			r, diag := types.ListValueFrom(ctx, basetypes.StringType{}, cluster.State.IstioVersions)
-			resp.Diagnostics.Append(diag...)
-			return r
-		}(),
-		LastSyncTime: State_LastSyncTime_Model{
-			Nanos:   types.Int64Value(int64(cluster.State.LastSyncTime.Nanos)),
-			Seconds: types.Int64Value(int64(cluster.State.LastSyncTime.Seconds)),
-		},
-		Provider:     types.StringValue(cluster.State.Provider),
-		TsbCpVersion: types.StringValue(cluster.State.TsbCpVersion),
-		XcpVersion:   types.StringValue(cluster.State.XcpVersion),
-	}
-	model.Tier1Cluster = Tier1Cluster_Model{Value: types.BoolValue(cluster.Tier1Cluster.Value)}
 	model.Labels = func() basetypes.MapValue {
 		r, diag := types.MapValueFrom(ctx, basetypes.StringType{}, cluster.Labels)
 		resp.Diagnostics.Append(diag...)
 		return r
 	}()
-	model.Locality = Locality_Model{Region: types.StringValue(cluster.Locality.Region)}
-	model.Description = types.StringValue(cluster.Description)
 	model.NamespaceScope = NamespaceScope_Model{
 		Exceptions: func() basetypes.ListValue {
 			r, diag := types.ListValueFrom(ctx, basetypes.StringType{}, cluster.NamespaceScope.Exceptions)
@@ -153,23 +170,6 @@ func (r *ClusterResource) Read(ctx context.Context, req resource.ReadRequest, re
 		}(),
 		Scope: types.StringValue(v2.NamespaceScoping_Scope_name[int32(cluster.NamespaceScope.Scope)]),
 	}
-	model.ServiceAccount = ServiceAccount_Model{
-		Description: types.StringValue(cluster.ServiceAccount.Description),
-		DisplayName: types.StringValue(cluster.ServiceAccount.DisplayName),
-		Keys: func() []*ServiceAccount_Keys_Model {
-			size := len(cluster.ServiceAccount.Keys)
-			tmp := make([]*ServiceAccount_Keys_Model, size, size)
-			for i, keys := range cluster.ServiceAccount.Keys {
-				tmp[i] = &ServiceAccount_Keys_Model{
-					DefaultToken: types.StringValue(keys.DefaultToken),
-					Encoding:     types.StringValue(v2.ServiceAccount_KeyPair_Encoding_name[int32(keys.Encoding)]),
-					Id:           types.StringValue(keys.Id),
-					PrivateKey:   types.StringValue(keys.PrivateKey),
-					PublicKey:    types.StringValue(keys.PublicKey),
-				}
-			}
-			return tmp
-		}(),
-	}
+	model.Tier1Cluster = Tier1Cluster_Model{Value: types.BoolValue(cluster.Tier1Cluster.Value)}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 }

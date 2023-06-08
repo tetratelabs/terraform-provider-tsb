@@ -41,6 +41,8 @@ func TestAccUserResource(t *testing.T) {
 	updated := original
 	updated.DisplayName = "Terraform Provider Test Updated"
 
+	fmt.Println("asdfasdfasdfasdfasdf")
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { test.AccPreCheck(t) },
 		ProtoV6ProviderFactories: test.AccProtoV6ProviderFactories,
@@ -74,6 +76,7 @@ func TestAccUserResource(t *testing.T) {
 			// Delete testing automatically occurs in TestCase
 		},
 	})
+	fmt.Println("asdfasdfasdfasdfasdf part 2")
 }
 
 type userConfig struct {

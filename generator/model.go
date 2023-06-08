@@ -50,7 +50,8 @@ func genStruct(f *j.File, structName string, attributes map[string]schema.Attrib
 					tmp[k] = v
 				}
 				newStruct := genStruct(f, snakeSliceToCamel(append(prefix, fieldName, "Model")), tmp, append(prefix, fieldName))
-				return fieldId.Add(j.Op("[]*").Id(newStruct)).Add(tag)
+				// return fieldId.Add(j.Op("[]*").Id(newStruct)).Add(tag)
+				return fieldId.Qual(Types, "List").Add(tag).Comment(newStruct)
 			case schema.ListAttribute:
 				return fieldId.Qual(Types, "List").Add(tag)
 			case schema.MapAttribute:

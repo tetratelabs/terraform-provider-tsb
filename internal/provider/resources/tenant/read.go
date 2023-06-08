@@ -30,6 +30,7 @@ func (r *TenantResource) Read(ctx context.Context, req resource.ReadRequest, res
 	model.Id = types.StringValue(tenant.Fqn)
 	model.Name = types.StringValue(meta.Name)
 	model.Parent = types.StringValue(helpers.ParentFQN(api.TenantKind, meta))
+	model.Description = types.StringValue(tenant.Description)
 	model.DisplayName = types.StringValue(tenant.DisplayName)
 	model.SecurityDomain = types.StringValue(tenant.SecurityDomain)
 	model.ConfigGenerationMetadata = ConfigGenerationMetadata_Model{
@@ -45,6 +46,5 @@ func (r *TenantResource) Read(ctx context.Context, req resource.ReadRequest, res
 		}(),
 	}
 	model.DeletionProtectionEnabled = types.BoolValue(tenant.DeletionProtectionEnabled)
-	model.Description = types.StringValue(tenant.Description)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 }
