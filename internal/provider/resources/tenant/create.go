@@ -1,26 +1,16 @@
-// Copyright 2023 Tetrate
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package tenant
 
 import (
 	"context"
 	resource "github.com/hashicorp/terraform-plugin-framework/resource"
 	types "github.com/hashicorp/terraform-plugin-framework/types"
+	v21 "github.com/tetrateio/api/tsb/types/v2"
 	v2 "github.com/tetrateio/api/tsb/v2"
 )
 
+func ptrify[T any](v T) *T {
+	return &v
+}
 func (r *TenantResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var model TenantModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &model)...)
@@ -31,9 +21,22 @@ func (r *TenantResource) Create(ctx context.Context, req resource.CreateRequest,
 		Name:   model.Name.ValueString(),
 		Parent: model.Parent.ValueString(),
 		Tenant: &v2.Tenant{
-			Description:    model.Description.ValueString(),
-			DisplayName:    model.DisplayName.ValueString(),
-			SecurityDomain: model.SecurityDomain.ValueString(),
+			ConfigGenerationMetadata: &v21.ConfigGenerationMetadata{
+				Annotations: func() map[string]string {
+					tmp := make(map[string]string)
+					resp.Diagnostics.Append(model.ConfigGenerationMetadata.Annotations.ElementsAs(ctx, &tmp, false)...)
+					return tmp
+				}(),
+				Labels: func() map[string]string {
+					tmp := make(map[string]string)
+					resp.Diagnostics.Append(model.ConfigGenerationMetadata.Labels.ElementsAs(ctx, &tmp, false)...)
+					return tmp
+				}(),
+			},
+			DeletionProtectionEnabled: model.DeletionProtectionEnabled.ValueBool(),
+			Description:               model.Description.ValueString(),
+			DisplayName:               model.DisplayName.ValueString(),
+			SecurityDomain:            model.SecurityDomain.ValueString(),
 		},
 	}
 	tenant, err := r.client.CreateTenant(ctx, request)

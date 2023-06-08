@@ -26,7 +26,7 @@ import (
 )
 
 func TestAccServiceAccountResource(t *testing.T) {
-	name := fmt.Sprintf("tf_service_account_%v", time.Now().Unix())
+	name := fmt.Sprintf("tf_serviceaccount_%v", time.Now().Unix())
 	parent := fmt.Sprintf("organizations/%v", test.AccOrganizationName)
 	id := fmt.Sprintf("%v/serviceaccounts/%v", parent, name)
 	original := serviceAccountConfig{
@@ -47,32 +47,31 @@ func TestAccServiceAccountResource(t *testing.T) {
 			{
 				Config: test.BuildConfig(t, original.Block(t)),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("tsb_service_account."+name, "id", id),
-					resource.TestCheckResourceAttr("tsb_service_account."+name, "name", original.Name),
-					resource.TestCheckResourceAttr("tsb_service_account."+name, "parent", original.Parent),
-					resource.TestCheckResourceAttr("tsb_service_account."+name, "display_name", original.DisplayName),
-					resource.TestCheckResourceAttr("tsb_service_account."+name, "description", original.Description),
-					resource.TestCheckResourceAttr("tsb_service_account."+name, "key_encoding", original.KeyEncoding),
-					resource.TestCheckResourceAttrSet("tsb_service_account."+name, "keys.0.id"),
-					resource.TestCheckResourceAttrSet("tsb_service_account."+name, "keys.0.private_key"),
-					resource.TestCheckResourceAttrSet("tsb_service_account."+name, "keys.0.public_key"),
-					resource.TestCheckResourceAttr("tsb_service_account."+name, "keys.0.encoding", original.KeyEncoding),
-					resource.TestCheckResourceAttrSet("tsb_service_account."+name, "keys.0.default_token"),
+					resource.TestCheckResourceAttr("tsb_serviceaccount."+name, "id", id),
+					resource.TestCheckResourceAttr("tsb_serviceaccount."+name, "name", original.Name),
+					resource.TestCheckResourceAttr("tsb_serviceaccount."+name, "parent", original.Parent),
+					resource.TestCheckResourceAttr("tsb_serviceaccount."+name, "display_name", original.DisplayName),
+					resource.TestCheckResourceAttr("tsb_serviceaccount."+name, "description", original.Description),
+					resource.TestCheckResourceAttrSet("tsb_serviceaccount."+name, "keys.0.id"),
+					resource.TestCheckResourceAttrSet("tsb_serviceaccount."+name, "keys.0.private_key"),
+					resource.TestCheckResourceAttrSet("tsb_serviceaccount."+name, "keys.0.public_key"),
+					resource.TestCheckResourceAttr("tsb_serviceaccount."+name, "keys.0.encoding", original.KeyEncoding),
+					resource.TestCheckResourceAttrSet("tsb_serviceaccount."+name, "keys.0.default_token"),
 				),
 			},
 			// ImportState testing
 			{
-				ResourceName:            "tsb_service_account." + name,
+				ResourceName:            "tsb_serviceaccount." + name,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"keys.0.default_token", "keys.0.encoding", "keys.0.id", "keys.0.private_key", "keys.0.public_key", "keys.#", "keys.0.%", "key_encoding"},
+				ImportStateVerifyIgnore: []string{"keys.0.default_token", "keys.0.encoding", "keys.0.id", "keys.0.private_key", "keys.0.public_key", "keys.#", "keys.0.%"},
 			},
 			// Update and Read testing
 			{
 				Config: test.BuildConfig(t, updated.Block(t)),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("tsb_service_account."+name, "display_name", updated.DisplayName),
-					resource.TestCheckResourceAttrSet("tsb_service_account."+name, "keys.0.private_key"),
+					resource.TestCheckResourceAttr("tsb_serviceaccount."+name, "display_name", updated.DisplayName),
+					resource.TestCheckResourceAttrSet("tsb_serviceaccount."+name, "keys.0.private_key"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
@@ -98,11 +97,10 @@ func (c serviceAccountConfig) Block(t *testing.T) string {
 }
 
 const serviceAccountTmpl = `
-resource "tsb_service_account" "{{.Name}}" {
+resource "tsb_serviceaccount" "{{.Name}}" {
 	name = "{{.Name}}"
 	parent = "{{.Parent}}"
 	display_name = "{{.DisplayName}}"
 	description = "{{.Description}}"
-	key_encoding = "{{.KeyEncoding}}"
 }
 `

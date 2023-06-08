@@ -14,7 +14,7 @@
 
 default: build
 
-.PHONY: docs
+.PHONY: docs generator
 docs:
 	go install 
 	go generate ./...

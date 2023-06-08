@@ -16,6 +16,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	j "github.com/dave/jennifer/jen"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -68,24 +69,116 @@ func populateModel(r resource, s map[string]schema.Attribute) []j.Code {
 
 	// Handle remining recursively
 	for k, v := range s {
-		res = append(res, j.Id("model").Dot(snakeToCamel(k)).Op("=").Add(modelField(k, v, r)))
+		res = append(res, j.Id("model").Dot(snakeToCamel(k)).Op("=").Add(modelField(r.PkgImportPath, []string{k}, []string{r.lowerName, k}, v)))
 	}
 	return res
 }
 
-func modelField(name string, attr schema.Attribute, r resource) j.Code {
+func modelField(pkgImportPath string, modelPath []string, apiPath []string, attr schema.Attribute) *j.Statement {
+	a2c := func() *j.Statement {
+		return j.Id(apiPath[0]).Add(lo.Map(apiPath[1:], func(s string, _ int) j.Code {
+			return j.Dot(snakeToCamel(s))
+		})...)
+	}
+	m2c := func() *j.Statement {
+		return j.Id(snakeSliceToCamel(modelPath) + "_Model")
+	}
+
+	typeInfo, err := getGoTypes(attr.GetType())
+	if err != nil {
+		return j.Nil().Commentf("failed to get type for %v. %v", attr, err)
+	}
+	goType := typeInfo.GetGoType()
+	goImport := typeInfo.GetGoImport()
+
 	switch t := attr.(type) {
 	case schema.StringAttribute:
-		if t.CustomType == nil {
-			return j.Qual(Types, "StringValue").Call(j.Id(r.lowerName).Dot(snakeToCamel(name)))
+		if goType == "BytesKind" {
+			return j.Qual(Types, "StringValue").Call(a2c())
+		}
+		if goType == "StringKind" {
+			return j.Qual(Types, "StringValue").Call(a2c())
+		}
+
+		if goImport == "primitive" {
+			// return j.Qual(Types, "StringValue").Call(j.Id("rLowerName").Dot(snakeToCamel(apiPath[0])))
+			// return j.Qual(Types, "StringValue").Call(a2c())
+			goImport = pkgImportPath
 		}
 		// If it's a string but has a custom type it's an enum.
 		// This code works if the enum is in the same package as the resource, but we may need to pass
 		// more information to the struct at schema generation time in the future.
-		return j.Qual(Types, "StringValue").Call(j.Qual(r.PkgImportPath, snakeToCamel(name)+"_name").Index(j.Int32().Call(j.Id(r.lowerName).Dot(snakeToCamel(name)))))
+		// return j.Qual(Types, "StringValue").Call(j.Qual(goImport, snakeToCamel(modelPath[len(modelPath)-1])+"_name").Index(j.Int32().Call(a2c())))
+		return j.Qual(Types, "StringValue").Call(j.Qual(goImport, goType+"_name").Index(j.Int32().Call(a2c())))
+	case schema.Int64Attribute:
+		return j.Qual(Types, "Int64Value").Call(j.Int64().Call(a2c()))
+	case schema.Float64Attribute:
+		return j.Qual(Types, "Float64Value").Call(a2c())
+	case schema.BoolAttribute:
+		return j.Qual(Types, "BoolValue").Call(a2c())
 	case schema.ListNestedAttribute:
-		return nil
+		inner := j.Dict{}
+		iteree := strings.ToLower(modelPath[len(modelPath)-1])
+		for k, v := range t.NestedObject.Attributes {
+			inner[j.Id(snakeToCamel(k))] = modelField(pkgImportPath, append(modelPath, k), []string{iteree, k}, v) //j.Lit(fmt.Sprintf("modelField(append(%v, x), append(%v, x), %v)", modelPath, apiPath, v))
+		}
+		return j.Func().Call().Op("[]*").Add(m2c()).Block(
+			j.Id("size").Op(":=").Len(a2c()),
+			j.Id("tmp").Op(":=").Make(j.Op("[]*").Add(m2c()), j.Id("size"), j.Id("size")),
+			j.For(j.List(j.Id("i"), j.Id(iteree)).Op(":=").Range().Add(a2c())).Block(
+				j.Id("tmp").Index(j.Id("i")).Op("=").Op("&").Add(m2c()).Values(inner),
+			),
+			j.Return(j.Id("tmp")),
+		).Call()
+	// 	return j.Lit(fmt.Sprintf("%v / %v", typeInfo.GetGoImport(), typeInfo.GetGoType()))
+	case schema.ListAttribute:
+		return j.Func().Call().Qual(BaseTypes, "ListValue").Block(
+			j.List(j.Id("r"), j.Id("diag")).Op(":=").Qual(Types, "ListValueFrom").Call(
+				j.Id("ctx"),
+				j.Id(t.ElementType.String()).Values(),
+				// j.Id("model").Add(lo.Map(modelPath, func(s string, _ int) j.Code {
+				// 	return j.Dot(snakeToCamel(s))
+				// })...).Dot("ElementType").Call(j.Id("ctx")),
+				a2c(),
+			),
+			j.Id("resp").Dot("Diagnostics").Dot("Append").Call(j.Id("diag").Op("...")),
+			j.Return(j.Id("r")),
+		).Call()
+
+		// return j.Func().Call().Op("[]*").Add(a2c()).Block(
+		// 	j.Id("tmp").Op(":=").Make(j.Op("[]*").Add(p2c(modelPath)), j.Len(p2c(apiPath))),
+		// 	j.For(j.List(j.Id("_"), j.Id("n")).Op(":=").Range().Add(p2c(apiPath))).Block(
+		// 		j.Id("tmp").Op("=").Append(j.Id("tmp"), j.Lit("magicalRecursion")),
+		// 	),
+		// 	j.Return(j.Id("tmp")),
+		// ).Call()
+	// case schema.MapNestedAttribute:
+	// 	return j.Lit(fmt.Sprintf("%v / %v", typeInfo.GetGoImport(), typeInfo.GetGoType()))
+	case schema.MapAttribute:
+		return j.Func().Call().Qual(BaseTypes, "MapValue").Block(
+			// j.Comment("TODO: populate map with attr.Valueified values"),
+			// j.Id("tmp").Op(":=").Make(j.Map(j.String()).Qual("attr", "Value")),
+			j.List(j.Id("r"), j.Id("diag")).Op(":=").Qual(Types, "MapValueFrom").Call(
+				j.Id("ctx"),
+				// j.Id("model").Add(lo.Map(modelPath, func(s string, _ int) j.Code {
+				// 	return j.Dot(snakeToCamel(s))
+				// })...).Dot("ElementType").Call(j.Id("ctx")),
+				j.Id(t.ElementType.String()).Values(),
+				a2c(),
+			),
+			j.Id("resp").Dot("Diagnostics").Dot("Append").Call(j.Id("diag").Op("...")),
+			j.Return(j.Id("r")),
+		).Call()
+	case schema.SingleNestedAttribute:
+		inner := j.Dict{}
+		for k, v := range t.Attributes {
+			inner[j.Id(snakeToCamel(k))] = modelField(pkgImportPath, append(modelPath, k), append(apiPath, k), v) //j.Lit(fmt.Sprintf("modelField(append(%v, x), append(%v, x), %v)", modelPath, apiPath, v))
+		}
+
+		return m2c().Values(inner)
+
 	default:
-		panic(fmt.Sprintf("%v isn't supported as a resource value", t))
+		// fmt.Printf("%v isn't supported as a resource value\n", t.GetType().String())
+		return j.Lit(fmt.Sprintf("%T: %v / %v", t, typeInfo.GetGoImport(), typeInfo.GetGoType()))
 	}
 }

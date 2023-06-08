@@ -55,7 +55,7 @@ func genUpdate(r resource) *j.File {
 }
 
 func buildUpdateRequest(r resource) j.Dict {
-	res := buildResource(lo.OmitByKeys(r.Schema.Attributes, []string{"parent", "id", "name"}), []string{}, r)
+	res := buildInnerResource(lo.OmitByKeys(r.Schema.Attributes, []string{"parent", "id", "name"}), []string{"model"}, r.PkgImportPath)
 
 	res[j.Id("Fqn")] = j.Id("model").Dot("Id").Dot("ValueString").Call()
 	res[j.Id("Etag")] = j.Id(r.lowerName).Dot("Etag")
