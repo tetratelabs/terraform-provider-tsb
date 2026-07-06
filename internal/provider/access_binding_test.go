@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/types"
-
 	rbac "github.com/tetrateio/tetrate/api/tsb/rbac/v2"
 )
 

@@ -9,10 +9,9 @@ import (
 	"testing"
 
 	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"google.golang.org/protobuf/types/known/wrapperspb"
-
 	typesv2 "github.com/tetrateio/tetrate/api/tsb/types/v2"
 	v2 "github.com/tetrateio/tetrate/api/tsb/v2"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // tfsdkTags returns the set of tfsdk attribute names declared on a model struct.

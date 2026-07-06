@@ -9,10 +9,9 @@ import (
 
 	path "github.com/hashicorp/terraform-plugin-framework/path"
 	resource "github.com/hashicorp/terraform-plugin-framework/resource"
+	v2 "github.com/tetrateio/tetrate/api/tsb/v2"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-
-	v2 "github.com/tetrateio/tetrate/api/tsb/v2"
 )
 
 const serviceAccountCollection = "serviceaccounts"

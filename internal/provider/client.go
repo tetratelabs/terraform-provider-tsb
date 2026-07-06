@@ -10,12 +10,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/tetrateio/tetrate/pkg/auth"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	xcredentials "google.golang.org/grpc/experimental/credentials"
-
-	"github.com/tetrateio/tetrate/pkg/auth"
 )
 
 // Config holds the resolved provider configuration used to dial TSB. It is

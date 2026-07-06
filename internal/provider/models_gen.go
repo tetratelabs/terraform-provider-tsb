@@ -9,13 +9,6 @@ import (
 	jsontypes "github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	diag "github.com/hashicorp/terraform-plugin-framework/diag"
 	types "github.com/hashicorp/terraform-plugin-framework/types"
-	protojson "google.golang.org/protobuf/encoding/protojson"
-	anypb "google.golang.org/protobuf/types/known/anypb"
-	durationpb "google.golang.org/protobuf/types/known/durationpb"
-	structpb "google.golang.org/protobuf/types/known/structpb"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
-	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
-
 	common "github.com/tetrateio/tetrate/api/install/common"
 	v1alpha15 "github.com/tetrateio/tetrate/api/install/controlplane/v1alpha1"
 	v1alpha1 "github.com/tetrateio/tetrate/api/install/dataplane/v1alpha1"
@@ -36,6 +29,12 @@ import (
 	v29 "github.com/tetrateio/tetrate/api/tsb/traffic/v2"
 	v24 "github.com/tetrateio/tetrate/api/tsb/types/v2"
 	v2 "github.com/tetrateio/tetrate/api/tsb/v2"
+	protojson "google.golang.org/protobuf/encoding/protojson"
+	anypb "google.golang.org/protobuf/types/known/anypb"
+	durationpb "google.golang.org/protobuf/types/known/durationpb"
+	structpb "google.golang.org/protobuf/types/known/structpb"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // APIModel is the Terraform model for API.

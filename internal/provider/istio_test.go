@@ -7,11 +7,10 @@ import (
 	"strings"
 	"testing"
 
+	typesv2 "github.com/tetrateio/tetrate/api/tsb/types/v2"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	networking "istio.io/api/networking/v1alpha3"
-
-	typesv2 "github.com/tetrateio/tetrate/api/tsb/types/v2"
 )
 
 // TestIstioObjectSpecRoundTrip verifies that the Istio direct-mode spec (a

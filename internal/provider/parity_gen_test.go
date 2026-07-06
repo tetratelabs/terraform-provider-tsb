@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
-
 	v1alpha1 "github.com/tetrateio/tetrate/api/install/dataplane/v1alpha1"
 	v21 "github.com/tetrateio/tetrate/api/tsb/application/v2"
 	v22 "github.com/tetrateio/tetrate/api/tsb/extension/v2"

@@ -9,11 +9,10 @@ import (
 
 	path "github.com/hashicorp/terraform-plugin-framework/path"
 	resource "github.com/hashicorp/terraform-plugin-framework/resource"
-	codes "google.golang.org/grpc/codes"
-	status "google.golang.org/grpc/status"
-
 	v1alpha1 "github.com/tetrateio/tetrate/api/install/dataplane/v1alpha1"
 	v2 "github.com/tetrateio/tetrate/api/tsb/gateway/v2"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 )
 
 const gatewayInstallGatewayCollection = "installgateways"

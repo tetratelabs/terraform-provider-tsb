@@ -7,10 +7,9 @@ import (
 	"encoding/json"
 	"testing"
 
+	extension "github.com/tetrateio/tetrate/api/tsb/extension/v2"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
-
-	extension "github.com/tetrateio/tetrate/api/tsb/extension/v2"
 )
 
 // TestStructpbRoundTrip verifies that a google.protobuf.Struct field survives the

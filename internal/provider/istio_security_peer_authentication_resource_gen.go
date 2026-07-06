@@ -9,11 +9,10 @@ import (
 
 	path "github.com/hashicorp/terraform-plugin-framework/path"
 	resource "github.com/hashicorp/terraform-plugin-framework/resource"
-	codes "google.golang.org/grpc/codes"
-	status "google.golang.org/grpc/status"
-
 	v21 "github.com/tetrateio/tetrate/api/tsb/security/v2"
 	v2 "github.com/tetrateio/tetrate/api/tsb/types/v2"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 )
 
 const istioSecurityPeerAuthenticationCollection = "peerauthentications"

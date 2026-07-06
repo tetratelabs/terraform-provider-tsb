@@ -13,10 +13,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	rbac "github.com/tetrateio/tetrate/api/tsb/rbac/v2"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-
-	rbac "github.com/tetrateio/tetrate/api/tsb/rbac/v2"
 )
 
 // tsb_access_binding manages the RBAC AccessBindings (AccessPolicy) of a TSB
