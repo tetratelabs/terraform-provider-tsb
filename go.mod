@@ -2,14 +2,12 @@ module github.com/tetratelabs/terraform-provider-tsb
 
 go 1.26.4
 
-replace github.com/tetrateio/tetrate => /Users/chirauki/src/tetrate-dos
-
 require (
 	github.com/dave/jennifer v1.7.1
 	github.com/hashicorp/terraform-plugin-framework v1.19.0
 	github.com/hashicorp/terraform-plugin-framework-jsontypes v0.2.0
 	github.com/hashicorp/terraform-plugin-go v0.31.0
-	github.com/tetrateio/tetrate v0.0.0-00010101000000-000000000000
+	github.com/tetrateio/tetrate v0.0.0-20260707083831-256d1626f489
 	google.golang.org/genproto/googleapis/api v0.0.0-20260630182238-925bb5da69e7
 	google.golang.org/grpc v1.82.0
 	google.golang.org/protobuf v1.36.11
