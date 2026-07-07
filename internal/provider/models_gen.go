@@ -7637,11 +7637,12 @@ func flattenOIDCSettings_OfflineAccessSettings(ctx context.Context, p *v1alpha11
 
 // JitProvisioningModel is the Terraform model for JitProvisioning.
 type JitProvisioningModel struct {
-	Enabled      types.Bool      `tfsdk:"enabled"`
-	ProviderName types.String    `tfsdk:"provider_name"`
-	SubjectClaim types.String    `tfsdk:"subject_claim"`
-	GroupsClaim  types.String    `tfsdk:"groups_claim"`
-	GroupSync    *GroupSyncModel `tfsdk:"group_sync"`
+	Enabled               types.Bool      `tfsdk:"enabled"`
+	ProviderName          types.String    `tfsdk:"provider_name"`
+	SubjectClaim          types.String    `tfsdk:"subject_claim"`
+	GroupsClaim           types.String    `tfsdk:"groups_claim"`
+	GroupSync             *GroupSyncModel `tfsdk:"group_sync"`
+	VerifyBearerSignature types.Bool      `tfsdk:"verify_bearer_signature"`
 }
 
 // expandJitProvisioning converts the Terraform model into a JitProvisioning proto.
@@ -7660,6 +7661,7 @@ func expandJitProvisioning(ctx context.Context, m *JitProvisioningModel) (*v1alp
 		diags.Append(d...)
 		out.GroupSync = v
 	}
+	out.VerifyBearerSignature = m.VerifyBearerSignature.ValueBool()
 	return out, diags
 }
 
@@ -7677,6 +7679,7 @@ func flattenJitProvisioning(ctx context.Context, p *v1alpha11.JitProvisioning, m
 	} else {
 		m.GroupSync = nil
 	}
+	m.VerifyBearerSignature = types.BoolValue(p.VerifyBearerSignature)
 	return diags
 }
 
