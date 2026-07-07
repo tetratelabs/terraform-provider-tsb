@@ -1,0 +1,506 @@
+// Copyright (c) Tetrate, Inc 2026 All Rights Reserved.
+
+package main
+
+import (
+	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"reflect"
+	"sort"
+	"strconv"
+	"strings"
+
+	j "github.com/dave/jennifer/jen"
+	"google.golang.org/protobuf/reflect/protoreflect"
+)
+
+// Framework import paths used by the generated code.
+const (
+	pkgContext   = "context"
+	pkgFmt       = "fmt"
+	pkgDiag      = "github.com/hashicorp/terraform-plugin-framework/diag"
+	pkgTypes     = "github.com/hashicorp/terraform-plugin-framework/types"
+	pkgResource  = "github.com/hashicorp/terraform-plugin-framework/resource"
+	pkgPath      = "github.com/hashicorp/terraform-plugin-framework/path"
+	pkgCodes     = "google.golang.org/grpc/codes"
+	pkgStatus    = "google.golang.org/grpc/status"
+	pkgStructpb  = "google.golang.org/protobuf/types/known/structpb"
+	pkgProtoJSON = "google.golang.org/protobuf/encoding/protojson"
+	pkgJSONTypes = "github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+)
+
+const providerPkgName = "provider"
+
+// generator accumulates the set of message types whose model/expand/flatten must
+// be emitted, deduped by Go type, and tracks model-name collisions.
+type generator struct {
+	// queued message types pending emission, in discovery order.
+	queue []reflect.Type
+	// seen message types already queued (by Go type).
+	seen map[reflect.Type]bool
+	// modelName maps a Go type to its model base name (e.g. "Workspace").
+	modelName map[reflect.Type]string
+	// usedName guards against two distinct types claiming the same model name.
+	usedName map[string]reflect.Type
+	// resourceTypes marks which queued types are top-level resources (get the
+	// injected id/parent/name attributes).
+	resourceTypes map[reflect.Type]bool
+}
+
+func newGenerator() *generator {
+	return &generator{
+		seen:          map[reflect.Type]bool{},
+		modelName:     map[reflect.Type]string{},
+		usedName:      map[string]reflect.Type{},
+		resourceTypes: map[reflect.Type]bool{},
+	}
+}
+
+// baseName returns the model base name for a Go message type, registering a
+// unique name. Like-named messages from different packages are disambiguated by
+// prepending a group token (e.g. a second "Group" becomes "GatewayGroup").
+func (g *generator) baseName(t reflect.Type) string {
+	if n, ok := g.modelName[t]; ok {
+		return n
+	}
+	name := g.uniqueName(t.Name(), t)
+	g.usedName[name] = t
+	g.modelName[t] = name
+	return name
+}
+
+// uniqueName returns pref if free (or already owned by t), otherwise a
+// group-qualified, collision-free variant.
+func (g *generator) uniqueName(pref string, t reflect.Type) string {
+	if other, taken := g.usedName[pref]; !taken || other == t {
+		return pref
+	}
+	alt := goGroupToken(t.PkgPath()) + pref
+	cand := alt
+	for i := 2; ; i++ {
+		if other, taken := g.usedName[cand]; !taken || other == t {
+			return cand
+		}
+		cand = alt + strconv.Itoa(i)
+	}
+}
+
+// setName forces the model base name for a type (used to give resources their
+// group-qualified names before their closures are walked).
+func (g *generator) setName(t reflect.Type, name string) {
+	g.usedName[name] = t
+	g.modelName[t] = name
+}
+
+// goGroupToken derives a Go-identifier group prefix from a package import path
+// (".../api/tsb/gateway/v2" -> "Gateway"; ".../api/tsb/v2" -> "").
+func goGroupToken(pkgPath string) string {
+	parts := strings.Split(pkgPath, "/")
+	for i, p := range parts {
+		if p == "tsb" && i+1 < len(parts) {
+			seg := parts[i+1]
+			if versionSegRe.MatchString(seg) {
+				return ""
+			}
+			return camelGroup(seg)
+		}
+	}
+	if len(parts) == 0 {
+		return ""
+	}
+	return camelGroup(parts[len(parts)-1])
+}
+
+// enqueue registers a message type for emission (idempotent).
+func (g *generator) enqueue(t reflect.Type) error {
+	if g.seen[t] {
+		return nil
+	}
+	g.baseName(t)
+	g.seen[t] = true
+	g.queue = append(g.queue, t)
+	return nil
+}
+
+// generate emits all provider Go files for the discovered resources. Resources
+// whose model closure uses a not-yet-supported proto shape (oneofs, message
+// maps, structpb, etc.) are skipped with a loud warning rather than aborting the
+// whole run, so the supported majority still produces a working provider.
+func generate(resources []resourceInfo, outDir string) (int, error) {
+	var good []resourceInfo
+	for _, r := range resources {
+		if err := validateResource(r); err != nil {
+			fmt.Fprintf(os.Stderr, "gen-provider: SKIPPING tsb_%s: %v\n", r.TFName, err)
+			continue
+		}
+		good = append(good, r)
+	}
+
+	g := newGenerator()
+	for _, r := range good {
+		g.resourceTypes[r.MessageGoType] = true
+		// Shared-message resources (Istio direct mode) all reuse one model; let
+		// the message keep its own base name rather than each resource's identity.
+		if !r.SharedMessage {
+			g.setName(r.MessageGoType, r.BaseName)
+		}
+		if err := g.enqueue(r.MessageGoType); err != nil {
+			return 0, err
+		}
+	}
+
+	models := j.NewFile(providerPkgName)
+	models.HeaderComment("Copyright (c) Tetrate, Inc 2026 All Rights Reserved.")
+	models.HeaderComment("Code generated by gen-provider. DO NOT EDIT.")
+
+	// The queue grows as nested types are discovered; process to a fixed point.
+	for i := 0; i < len(g.queue); i++ {
+		t := g.queue[i]
+		if err := g.emitMessage(models, t); err != nil {
+			return 0, fmt.Errorf("message %s.%s: %w", t.PkgPath(), t.Name(), err)
+		}
+	}
+
+	if err := writeFile(models, filepath.Join(outDir, "models_gen.go")); err != nil {
+		return 0, err
+	}
+
+	// Remove any stale per-resource files (e.g. a resource that became
+	// unsupported) before writing the current set.
+	if stale, _ := filepath.Glob(filepath.Join(outDir, "*_resource_gen.go")); stale != nil {
+		for _, p := range stale {
+			if err := os.Remove(p); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	for _, r := range good {
+		rf := j.NewFile(providerPkgName)
+		rf.HeaderComment("Copyright (c) Tetrate, Inc 2026 All Rights Reserved.")
+		rf.HeaderComment("Code generated by gen-provider. DO NOT EDIT.")
+		if err := g.emitResource(rf, r); err != nil {
+			return 0, fmt.Errorf("resource %s: %w", r.TFName, err)
+		}
+		if err := writeFile(rf, filepath.Join(outDir, r.TFName+"_resource_gen.go")); err != nil {
+			return 0, err
+		}
+	}
+
+	if err := g.emitProvider(good, outDir); err != nil {
+		return 0, err
+	}
+	if err := g.emitParityTest(good, outDir); err != nil {
+		return 0, err
+	}
+	if err := gofmtDir(outDir); err != nil {
+		return 0, err
+	}
+	return len(good), nil
+}
+
+// emitParityTest writes a generated test asserting every resource model's tfsdk
+// tags match its reused schema's top-level attributes (drift would panic at
+// runtime when Terraform reads/writes state).
+func (g *generator) emitParityTest(resources []resourceInfo, outDir string) error {
+	f := j.NewFile(providerPkgName)
+	f.HeaderComment("Copyright (c) Tetrate, Inc 2026 All Rights Reserved.")
+	f.HeaderComment("Code generated by gen-provider. DO NOT EDIT.")
+
+	cases := make([]j.Code, 0, len(resources))
+	for _, r := range resources {
+		base := g.modelName[r.MessageGoType]
+		cases = append(cases, j.Values(j.Dict{
+			j.Id("name"):   j.Lit(r.TFName),
+			j.Id("schema"): j.Qual(r.MessageGoType.PkgPath(), r.MessageGoType.Name()+"Schema").Call(),
+			j.Id("model"):  j.Qual("reflect", "TypeOf").Call(j.Id(base + "Model").Values()),
+		}))
+	}
+
+	f.Comment("TestModelSchemaParity asserts each generated model covers exactly its schema's attributes.")
+	f.Func().Id("TestModelSchemaParity").Params(j.Id("t").Op("*").Qual("testing", "T")).Block(
+		j.Id("cases").Op(":=").Index().StructFunc(func(g *j.Group) {
+			g.Id("name").String()
+			g.Id("schema").Qual("github.com/hashicorp/terraform-plugin-framework/resource/schema", "Schema")
+			g.Id("model").Qual("reflect", "Type")
+		}).Values(cases...),
+		j.For(j.List(j.Id("_"), j.Id("c")).Op(":=").Range().Id("cases")).Block(
+			j.Var().Id("want").Index().String(),
+			j.For(j.Id("name").Op(":=").Range().Id("c").Dot("schema").Dot("Attributes")).Block(
+				j.Id("want").Op("=").Append(j.Id("want"), j.Id("name")),
+			),
+			j.Qual("sort", "Strings").Call(j.Id("want")),
+			j.Var().Id("got").Index().String(),
+			j.For(j.Id("i").Op(":=").Lit(0).Op(";").Id("i").Op("<").Id("c").Dot("model").Dot("NumField").Call().Op(";").Id("i").Op("++")).Block(
+				j.If(j.List(j.Id("tag"), j.Id("ok")).Op(":=").Id("c").Dot("model").Dot("Field").Call(j.Id("i")).Dot("Tag").Dot("Lookup").Call(j.Lit("tfsdk")).Op(";").Id("ok")).Block(
+					j.Id("got").Op("=").Append(j.Id("got"), j.Id("tag")),
+				),
+			),
+			j.Qual("sort", "Strings").Call(j.Id("got")),
+			j.If(j.Op("!").Qual("reflect", "DeepEqual").Call(j.Id("want"), j.Id("got"))).Block(
+				j.Id("t").Dot("Errorf").Call(j.Lit("%s: model/schema attribute mismatch\n schema: %v\n model:  %v"), j.Id("c").Dot("name"), j.Id("want"), j.Id("got")),
+			),
+		),
+	)
+	return writeFile(f, filepath.Join(outDir, "parity_gen_test.go"))
+}
+
+// validateResource attempts a throwaway emission of a resource's full model
+// closure, returning the first unsupported-shape error (if any) without writing.
+func validateResource(r resourceInfo) error {
+	g := newGenerator()
+	g.resourceTypes[r.MessageGoType] = true
+	if !r.SharedMessage {
+		g.setName(r.MessageGoType, r.BaseName)
+	}
+	if err := g.enqueue(r.MessageGoType); err != nil {
+		return err
+	}
+	discard := j.NewFile(providerPkgName)
+	for i := 0; i < len(g.queue); i++ {
+		t := g.queue[i]
+		if err := g.emitMessage(discard, t); err != nil {
+			return fmt.Errorf("message %s.%s: %w", t.PkgPath(), t.Name(), err)
+		}
+	}
+	return g.emitResource(j.NewFile(providerPkgName), r)
+}
+
+// fieldPlan describes one proto field's mapping to a Terraform model field.
+type fieldPlan struct {
+	Key    string       // snake_case tfsdk tag
+	GoName string       // model struct Go field name (e.g. DisplayName)
+	GoType reflect.Type // proto Go type of the value (field type, or oneof member type)
+	FD     protoreflect.FieldDescriptor
+	// Oneof is non-nil when this field is a member of a real (non-synthetic) proto
+	// oneof. The schema renders oneof members as flat sibling attributes; in Go
+	// they are wrapped in a per-member struct assigned to a single interface field.
+	Oneof *oneofInfo
+	// OptionalScalar marks a proto3 `optional` scalar (a synthetic oneof), whose Go
+	// representation is a pointer; expand/flatten must take/deref the address.
+	OptionalScalar bool
+}
+
+// oneofInfo carries the Go representation of a proto oneof member, resolved by
+// reflection so the wrapper type name (which may carry a trailing underscore to
+// avoid colliding with a sibling message type) is always exact.
+type oneofInfo struct {
+	OneofGoField string       // parent interface field, e.g. "Authn"
+	WrapperType  reflect.Type // per-member wrapper struct, e.g. Authentication_Jwt
+	WrapperField string       // field inside the wrapper, e.g. "Jwt"
+	ParentType   reflect.Type // parent message type (for qualifying the wrapper)
+}
+
+// fieldPlans returns the emittable fields for a message, applying the same
+// skip rules as the schema generator (drop etag/fqn).
+func (g *generator) fieldPlans(t reflect.Type, desc protoreflect.MessageDescriptor) ([]fieldPlan, error) {
+	byProto := protoStructFields(t)
+	var plans []fieldPlan
+	fields := desc.Fields()
+	for i := 0; i < fields.Len(); i++ {
+		fd := fields.Get(i)
+		// Real (non-synthetic) oneof member: wrapped in an interface field.
+		if oo := fd.ContainingOneof(); oo != nil && !oo.IsSynthetic() {
+			info, memberType, err := oneofMember(t, fd)
+			if err != nil {
+				return nil, err
+			}
+			plans = append(plans, fieldPlan{
+				Key:    snakeCase(info.WrapperField),
+				GoName: info.WrapperField,
+				GoType: memberType,
+				FD:     fd,
+				Oneof:  &info,
+			})
+			continue
+		}
+		sf, ok := byProto[string(fd.Name())]
+		if !ok {
+			return nil, fmt.Errorf("no Go struct field for proto field %q", fd.Name())
+		}
+		key := snakeCase(sf.Name)
+		if key == "etag" || key == "fqn" {
+			continue
+		}
+		plan := fieldPlan{Key: key, GoName: sf.Name, GoType: sf.Type, FD: fd}
+		// proto3 optional scalars are Go pointers (synthetic oneof).
+		if sf.Type.Kind() == reflect.Ptr && !isMessageKind(fd) && !fd.IsList() && !fd.IsMap() {
+			plan.OptionalScalar = true
+		}
+		plans = append(plans, plan)
+	}
+	return plans, nil
+}
+
+// emitMessage writes the model struct + expand + flatten for one message type.
+func (g *generator) emitMessage(f *j.File, t reflect.Type) error {
+	desc, err := descriptorFor(t)
+	if err != nil {
+		return err
+	}
+	plans, err := g.fieldPlans(t, desc)
+	if err != nil {
+		return err
+	}
+	base := g.baseName(t)
+	isResource := g.resourceTypes[t]
+
+	// Model struct.
+	structFields := []j.Code{}
+	if isResource {
+		structFields = append(structFields,
+			j.Id("ID").Qual(pkgTypes, "String").Tag(map[string]string{"tfsdk": "id"}),
+			j.Id("Parent").Qual(pkgTypes, "String").Tag(map[string]string{"tfsdk": "parent"}),
+			j.Id("Name").Qual(pkgTypes, "String").Tag(map[string]string{"tfsdk": "name"}),
+		)
+	}
+	for _, p := range plans {
+		mt, err := g.modelFieldType(p)
+		if err != nil {
+			return fmt.Errorf("field %q: %w", p.Key, err)
+		}
+		structFields = append(structFields, j.Id(p.GoName).Add(mt).Tag(map[string]string{"tfsdk": p.Key}))
+	}
+	f.Commentf("%sModel is the Terraform model for %s.", base, t.Name())
+	f.Type().Id(base + "Model").Struct(structFields...)
+
+	if err := g.emitExpand(f, t, base, plans, isResource); err != nil {
+		return err
+	}
+	return g.emitFlatten(f, t, base, plans, isResource)
+}
+
+// modelFieldType returns the jennifer type for a model struct field and enqueues
+// any nested message types it references.
+func (g *generator) modelFieldType(p fieldPlan) (j.Code, error) {
+	fd := p.FD
+	if isCreateOnly(fd) {
+		// create-only secrets are surfaced as a computed JSON string.
+		return j.Qual(pkgJSONTypes, "Normalized"), nil
+	}
+	switch {
+	case fd.IsMap():
+		if isMessageKind(fd.MapValue()) {
+			vt := p.GoType.Elem() // map value Go type (*Msg)
+			if err := g.enqueue(vt.Elem()); err != nil {
+				return nil, err
+			}
+			n := g.baseName(vt.Elem())
+			return j.Map(j.String()).Id(n + "Model"), nil
+		}
+		return j.Qual(pkgTypes, "Map"), nil
+	case fd.IsList():
+		if isMessageKind(fd) {
+			et := p.GoType.Elem() // *Msg
+			if err := g.enqueue(et.Elem()); err != nil {
+				return nil, err
+			}
+			n := g.baseName(et.Elem())
+			return j.Index().Id(n + "Model"), nil
+		}
+		return j.Qual(pkgTypes, "List"), nil
+	case isMessageKind(fd):
+		if isWellKnownJSON(fd) {
+			return j.Qual(pkgJSONTypes, "Normalized"), nil
+		}
+		st := p.GoType.Elem() // struct behind *Msg
+		if err := g.enqueue(st); err != nil {
+			return nil, err
+		}
+		n := g.baseName(st)
+		return j.Op("*").Id(n + "Model"), nil
+	default:
+		return scalarModelType(fd), nil
+	}
+}
+
+func scalarModelType(fd protoreflect.FieldDescriptor) j.Code {
+	switch fd.Kind() {
+	case protoreflect.BoolKind:
+		return j.Qual(pkgTypes, "Bool")
+	case protoreflect.Int32Kind, protoreflect.Int64Kind, protoreflect.Uint32Kind, protoreflect.Uint64Kind,
+		protoreflect.Sint32Kind, protoreflect.Sint64Kind, protoreflect.Fixed32Kind, protoreflect.Fixed64Kind,
+		protoreflect.Sfixed32Kind, protoreflect.Sfixed64Kind:
+		return j.Qual(pkgTypes, "Int64")
+	case protoreflect.FloatKind, protoreflect.DoubleKind:
+		return j.Qual(pkgTypes, "Float64")
+	default:
+		// string, bytes, enum
+		return j.Qual(pkgTypes, "String")
+	}
+}
+
+func writeFile(f *j.File, path string) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	if err := f.Save(path); err != nil {
+		return fmt.Errorf("save %s: %w", path, err)
+	}
+	// jennifer already gofmt's, but run goimports-style gofmt to be safe.
+	return nil
+}
+
+// emitProvider writes provider_gen.go with the Resources() registration.
+func (g *generator) emitProvider(resources []resourceInfo, outDir string) error {
+	f := j.NewFile(providerPkgName)
+	f.HeaderComment("Copyright (c) Tetrate, Inc 2026 All Rights Reserved.")
+	f.HeaderComment("Code generated by gen-provider. DO NOT EDIT.")
+
+	ctors := make([]j.Code, 0, len(resources))
+	names := make([]string, 0, len(resources))
+	for _, r := range resources {
+		names = append(names, "New"+r.BaseName+"Resource")
+	}
+	sort.Strings(names)
+	for _, n := range names {
+		ctors = append(ctors, j.Id(n))
+	}
+
+	f.Comment("Resources returns the constructors for every TSB resource exposed by the provider.")
+	f.Func().Id("Resources").Params().Index().Func().Params().Qual(pkgResource, "Resource").Block(
+		j.Return(j.Index().Func().Params().Qual(pkgResource, "Resource").Values(ctors...)),
+	)
+	return writeFile(f, filepath.Join(outDir, "provider_gen.go"))
+}
+
+// gofmtDir runs gofmt -w over the output directory.
+func gofmtDir(dir string) error {
+	cmd := exec.Command("gofmt", "-w", dir)
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+func isMessageKind(fd protoreflect.FieldDescriptor) bool {
+	return fd.Kind() == protoreflect.MessageKind || fd.Kind() == protoreflect.GroupKind
+}
+
+// isWellKnownJSON reports whether a field is one of the protobuf well-known
+// types representing arbitrary JSON (modelled as a normalized JSON string).
+func isWellKnownJSON(fd protoreflect.FieldDescriptor) bool {
+	if !isMessageKind(fd) {
+		return false
+	}
+	switch fd.Message().FullName() {
+	case "google.protobuf.Struct", "google.protobuf.Value", "google.protobuf.ListValue", "google.protobuf.Any":
+		return true
+	}
+	return false
+}
+
+// createOnlyMessages are TSB message types the server populates only at create
+// time (ServiceAccount key pairs carry private keys that are never re-sent).
+// Fields of these types are modelled as a computed JSON string, populated on
+// create and preserved verbatim on read/update. Kept in sync with the same set
+// in the schema generator (api/protoc-plugins/protoc-gen-terraform).
+var createOnlyMessages = map[string]bool{
+	"tetrateio.api.tsb.v2.ServiceAccount":         true,
+	"tetrateio.api.tsb.v2.ServiceAccount.KeyPair": true,
+}
+
+// isCreateOnly reports whether a field carries create-only secrets.
+func isCreateOnly(fd protoreflect.FieldDescriptor) bool {
+	return isMessageKind(fd) && createOnlyMessages[string(fd.Message().FullName())]
+}

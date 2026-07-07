@@ -1,131 +1,167 @@
-// Copyright 2023 Tetrate
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright (c) Tetrate, Inc 2026 All Rights Reserved.
 
 package provider
 
 import (
 	"context"
-	"crypto/tls"
+	"os"
+	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
-
-	"github.com/tetratelabs/terraform-provider-tsb/internal/helpers"
-	"github.com/tetratelabs/terraform-provider-tsb/internal/provider/datasources/organization"
-	"github.com/tetratelabs/terraform-provider-tsb/internal/provider/resources/serviceaccount"
-	"github.com/tetratelabs/terraform-provider-tsb/internal/provider/resources/tenant"
-	"github.com/tetratelabs/terraform-provider-tsb/internal/provider/resources/user"
-	"github.com/tetratelabs/terraform-provider-tsb/internal/provider/validators"
 )
 
-// Ensure TsbProvider satisfies various provider interfaces.
-var _ provider.Provider = &TsbProvider{}
+// Ensure tsbProvider satisfies the provider.Provider interface.
+var _ provider.Provider = (*tsbProvider)(nil)
 
-// TsbProvider defines the provider implementation.
-type TsbProvider struct {
-	// version is set to the provider version on release, "dev" when the
-	// provider is built and ran locally, and "test" when running acceptance
-	// testing.
-	version string
+// version is set at build time via -ldflags; "dev" by default.
+var version = "dev"
+
+// tsbProvider is the Terraform provider for Tetrate Service Bridge (TSB).
+type tsbProvider struct{}
+
+// New returns a constructor for the TSB provider, suitable for providerserver.Serve.
+func New() func() provider.Provider {
+	return func() provider.Provider {
+		return &tsbProvider{}
+	}
 }
 
-// Schema implements provider.Provider
-func (*TsbProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
+// providerModel maps the provider configuration block.
+type providerModel struct {
+	Endpoint     types.String `tfsdk:"endpoint"`
+	Token        types.String `tfsdk:"token"`
+	Username     types.String `tfsdk:"username"`
+	Password     types.String `tfsdk:"password"`
+	Organization types.String `tfsdk:"organization"`
+	CustomCAFile types.String `tfsdk:"ca_file"`
+	TLSDisabled  types.Bool   `tfsdk:"tls_disabled"`
+	TLSInsecure  types.Bool   `tfsdk:"tls_insecure"`
+}
+
+func (p *tsbProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
+	resp.TypeName = "tsb"
+	resp.Version = version
+}
+
+func (p *tsbProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Description: "Manage Tetrate Service Bridge (TSB) resources via the TSB v2 API.",
 		Attributes: map[string]schema.Attribute{
-			"address": schema.StringAttribute{
-				MarkdownDescription: "The address that the management plane can be reached at. Must include port.",
-				Required:            true,
-				Validators:          []validator.String{validators.AddressIncludesPort()},
+			"endpoint": schema.StringAttribute{
+				Optional:    true,
+				Description: "TSB gRPC endpoint (host:port). May also be set via the TSB_ENDPOINT environment variable.",
 			},
-			"basic_auth": schema.SingleNestedAttribute{
-				Description: "The basic auth credentials to communicate with a TSB management plane.",
-				Required:    true,
-				Attributes: map[string]schema.Attribute{
-					"username": schema.StringAttribute{
-						Required: true,
-					},
-					"password": schema.StringAttribute{
-						Required:  true,
-						Sensitive: true,
-					},
-				},
+			"token": schema.StringAttribute{
+				Optional:    true,
+				Sensitive:   true,
+				Description: "TSB API token sent in the x-tetrate-token header. Takes precedence over username/password. May also be set via the TSB_TOKEN environment variable.",
+			},
+			"username": schema.StringAttribute{
+				Optional:    true,
+				Description: "Username for HTTP Basic authentication, used when `token` is not set. May also be set via the TSB_USERNAME environment variable.",
+			},
+			"password": schema.StringAttribute{
+				Optional:    true,
+				Sensitive:   true,
+				Description: "Password for HTTP Basic authentication, used together with `username`. May also be set via the TSB_PASSWORD environment variable.",
+			},
+			"organization": schema.StringAttribute{
+				Optional:    true,
+				Description: "TSB organization the resources belong to. May also be set via the TSB_ORG environment variable.",
+			},
+			"ca_file": schema.StringAttribute{
+				Optional:    true,
+				Description: "Path to a PEM CA bundle used to verify the TSB server certificate. May also be set via the TSB_CA_FILE environment variable.",
+			},
+			"tls_disabled": schema.BoolAttribute{
+				Optional:    true,
+				Description: "Disable transport security entirely (plaintext). May also be set via the TSB_TLS_DISABLED environment variable.",
+			},
+			"tls_insecure": schema.BoolAttribute{
+				Optional:    true,
+				Description: "Keep TLS enabled but skip server certificate verification. May also be set via the TSB_TLS_INSECURE environment variable.",
 			},
 		},
 	}
 }
 
-// TsbProviderModel describes the provider data model.
-type TsbProviderModel struct {
-	Address   types.String      `tfsdk:"address"`
-	BasicAuth helpers.BasicAuth `tfsdk:"basic_auth"`
-}
-
-func (p *TsbProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
-	resp.TypeName = "tsb"
-	resp.Version = p.version
-}
-
-func (p *TsbProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
-	var data TsbProviderModel
+func (p *tsbProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+	var data providerModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// TODO: support passing in custom ca bundles
-	tlsConfig := &tls.Config{}
-	opts := []grpc.DialOption{
-		grpc.WithBlock(),
-		grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)),
-		grpc.WithPerRPCCredentials(data.BasicAuth),
+	cfg := Config{
+		Endpoint:     stringWithEnv(data.Endpoint, "TSB_ENDPOINT"),
+		Token:        stringWithEnv(data.Token, "TSB_TOKEN"),
+		Username:     stringWithEnv(data.Username, "TSB_USERNAME"),
+		Password:     stringWithEnv(data.Password, "TSB_PASSWORD"),
+		Organization: stringWithEnv(data.Organization, "TSB_ORG"),
+		CustomCAFile: stringWithEnv(data.CustomCAFile, "TSB_CA_FILE"),
+		TLSDisabled:  boolWithEnv(data.TLSDisabled, "TSB_TLS_DISABLED"),
+		TLSInsecure:  boolWithEnv(data.TLSInsecure, "TSB_TLS_INSECURE"),
 	}
 
-	cc, err := grpc.DialContext(ctx, data.Address.ValueString(), opts...)
+	if cfg.Endpoint == "" {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("endpoint"),
+			"Missing TSB endpoint",
+			"The provider requires a TSB endpoint. Set the `endpoint` attribute or the TSB_ENDPOINT environment variable.",
+		)
+	}
+	// Require either a token or a username/password pair.
+	if cfg.Token == "" && (cfg.Username == "" || cfg.Password == "") {
+		resp.Diagnostics.AddError(
+			"Missing TSB credentials",
+			"The provider requires either a `token` (TSB_TOKEN) or both `username` and `password` "+
+				"(TSB_USERNAME / TSB_PASSWORD) for authentication.",
+		)
+	}
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	conn, err := cfg.dial(ctx)
 	if err != nil {
-		panic(err)
+		resp.Diagnostics.AddError("Unable to connect to TSB", err.Error())
+		return
 	}
 
-	clients := helpers.NewClients(cc)
-	resp.DataSourceData = clients
-	resp.ResourceData = clients
+	c := &client{conn: conn, config: cfg}
+	resp.ResourceData = c
+	resp.DataSourceData = c
 }
 
-func (p *TsbProvider) Resources(ctx context.Context) []func() resource.Resource {
-	return []func() resource.Resource{
-		tenant.NewResource,
-		serviceaccount.NewResource,
-		user.NewResource,
-	}
+func (p *tsbProvider) Resources(_ context.Context) []func() resource.Resource {
+	// Generated resources plus hand-written ones that don't fit the CRUD-quartet
+	// generator (e.g. the Get/Set-based access bindings).
+	return append(Resources(), NewAccessBindingResource)
 }
 
-func (p *TsbProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
-	return []func() datasource.DataSource{
-		organization.NewDataSource,
-	}
+func (p *tsbProvider) DataSources(_ context.Context) []func() datasource.DataSource {
+	return nil
 }
 
-func New(version string) func() provider.Provider {
-	return func() provider.Provider {
-		return &TsbProvider{
-			version: version,
-		}
+// stringWithEnv returns the configured value, falling back to the named env var.
+func stringWithEnv(v types.String, env string) string {
+	if !v.IsNull() && !v.IsUnknown() {
+		return v.ValueString()
 	}
+	return os.Getenv(env)
+}
+
+// boolWithEnv returns the configured value, falling back to the named env var
+// (parsed as a bool; unparseable or unset env yields false).
+func boolWithEnv(v types.Bool, env string) bool {
+	if !v.IsNull() && !v.IsUnknown() {
+		return v.ValueBool()
+	}
+	b, _ := strconv.ParseBool(os.Getenv(env))
+	return b
 }
