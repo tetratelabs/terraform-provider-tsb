@@ -12,7 +12,7 @@
 terraform {
   required_providers {
     tsb = {
-      source = "tetrateio/tsb"
+      source = "tetratelabs/tsb"
     }
     kubernetes = {
       source = "hashicorp/kubernetes"
