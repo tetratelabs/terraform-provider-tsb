@@ -8,12 +8,16 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
 
 	j "github.com/dave/jennifer/jen"
+	"google.golang.org/genproto/googleapis/api/annotations"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 // Framework import paths used by the generated code.
@@ -503,4 +507,23 @@ var createOnlyMessages = map[string]bool{
 // isCreateOnly reports whether a field carries create-only secrets.
 func isCreateOnly(fd protoreflect.FieldDescriptor) bool {
 	return isMessageKind(fd) && createOnlyMessages[string(fd.Message().FullName())]
+}
+
+// isInputOnly reports whether a field is annotated `google.api.field_behavior =
+// INPUT_ONLY`: the server accepts it on write but never returns it in responses
+// (e.g. OIDC.secret, a client secret TSB stores outside its database and never
+// echoes back). Such fields must not be overwritten by flatten — the model
+// already holds the correct value, either from the plan (create/update) or the
+// prior state (read) — or every apply would report a produced-inconsistent-state
+// error as the server's always-empty response blanks out the configured value.
+func isInputOnly(fd protoreflect.FieldDescriptor) bool {
+	opts, ok := fd.Options().(*descriptorpb.FieldOptions)
+	if !ok {
+		return false
+	}
+	behaviors, ok := proto.GetExtension(opts, annotations.E_FieldBehavior).([]annotations.FieldBehavior)
+	if !ok {
+		return false
+	}
+	return slices.Contains(behaviors, annotations.FieldBehavior_INPUT_ONLY)
 }

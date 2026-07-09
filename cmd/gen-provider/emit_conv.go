@@ -265,6 +265,12 @@ func (g *generator) flattenField(p fieldPlan) ([]j.Code, error) {
 		}, nil
 	}
 
+	// INPUT_ONLY fields are never echoed back by the server; leave the model's
+	// existing value (plan or prior state) untouched instead of overwriting it.
+	if isInputOnly(fd) {
+		return nil, nil
+	}
+
 	switch {
 	case fd.IsMap():
 		if isMessageKind(fd.MapValue()) {
