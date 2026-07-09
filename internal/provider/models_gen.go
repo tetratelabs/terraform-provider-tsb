@@ -1558,7 +1558,6 @@ func flattenOIDC(ctx context.Context, p *v2.OIDC, m *OIDCModel) diag.Diagnostics
 	} else {
 		m.Config = nil
 	}
-	m.Secret = stringOrNull(p.Secret)
 	return diags
 }
 

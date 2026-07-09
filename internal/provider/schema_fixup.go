@@ -3,13 +3,24 @@
 package provider
 
 import (
+	"context"
+
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/defaults"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 )
+
+// enumZeroValueDefault is the sentinel a proto enum's zero value renders as
+// (e.g. SourceType_INVALID = 0 -> "INVALID"). protoc-gen-terraform falls back
+// to this name as a Computed attribute's Default whenever the proto field is
+// missing a `+protoc-gen-terraform:enumdefault:N` override tag — it is never a
+// deliberately chosen default. See defaultIsUntrustworthy.
+const enumZeroValueDefault = "INVALID"
 
 // fixupSchema adapts a reused TSB schema (produced by protoc-gen-terraform) so it
 // is valid and well-behaved for the Terraform Plugin Framework at serve time.
 //
-// Two adjustments are made, recursively, to every attribute:
+// Adjustments are made, recursively, to every attribute:
 //
 //  1. Required attributes carrying a Default (the enum StaticString default the
 //     schema generator emits) have the Default dropped — Required+Default is
@@ -28,9 +39,28 @@ import (
 //     made Computed: the generated models back them with plain Go structs, which
 //     cannot represent the "unknown" plan value that Computed introduces. Their
 //     leaf attributes are still fixed up via recursion.
+//
+//  3. Computed-only (not Optional/Required) string attributes whose Default
+//     resolves to the proto enum zero-value sentinel have the Default dropped
+//     in favor of UseStateForUnknown. Such a Default is protoc-gen-terraform's
+//     "no real default configured" fallback, not a value TSB actually persists
+//     (e.g. Team.source_type defaults to "INVALID", but CreateTeam/UpdateTeam
+//     always coerce an unset source type to LOCAL server-side) — keeping it
+//     forces a known planned value that the server's real response then
+//     contradicts, producing "Provider produced inconsistent result after
+//     apply" on every create. Leaving the planned value unknown lets it be
+//     filled in from whatever the server actually returns.
 func fixupSchema(s schema.Schema) schema.Schema {
 	s.Attributes = fixupAttributes(s.Attributes)
 	return s
+}
+
+// defaultIsUntrustworthy reports whether d resolves to the proto enum
+// zero-value sentinel (see enumZeroValueDefault).
+func defaultIsUntrustworthy(d defaults.String) bool {
+	var resp defaults.StringResponse
+	d.DefaultString(context.Background(), defaults.StringRequest{}, &resp)
+	return resp.PlanValue.ValueString() == enumZeroValueDefault
 }
 
 func fixupAttributes(in map[string]schema.Attribute) map[string]schema.Attribute {
@@ -44,10 +74,14 @@ func fixupAttributes(in map[string]schema.Attribute) map[string]schema.Attribute
 func fixupAttribute(attr schema.Attribute) schema.Attribute {
 	switch a := attr.(type) {
 	case schema.StringAttribute:
-		if a.Required {
+		switch {
+		case a.Required:
 			a.Default = nil
-		} else if a.Optional {
+		case a.Optional:
 			a.Computed = true
+		case a.Computed && a.Default != nil && defaultIsUntrustworthy(a.Default):
+			a.Default = nil
+			a.PlanModifiers = append(a.PlanModifiers, stringplanmodifier.UseStateForUnknown())
 		}
 		return a
 	case schema.BoolAttribute:
