@@ -16,3 +16,10 @@ import (
 func New() func() provider.Provider {
 	return internal.New()
 }
+
+// Groups maps each generated resource's Terraform type suffix to its TSB API
+// group (see internal/provider/groups_gen.go for the exact contract and the
+// hand-written-resource caveat).
+func Groups() map[string]string {
+	return internal.Groups()
+}
