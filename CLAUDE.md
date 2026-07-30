@@ -8,15 +8,24 @@ The Terraform provider for Tetrate Service Bridge (TSB), managing TSB v2 API res
 
 This repo was recently split out of a monorepo (branch `migrate-from-monorepo`); `.superpowers/sdd/progress.md` has the migration history if relevant context is missing here.
 
-## Local dev setup gotcha
+## The `github.com/tetrateio/tetrate` dependency
 
-`go.mod` currently has:
+This is a **private** module, pinned in `go.mod` to a pseudo-version. Resolving it (`go get`, `go mod tidy`, or a cold `go build`) needs both of:
 
+```sh
+export GOPRIVATE='github.com/tetrateio/*'
+git config --global url."git@github.com:".insteadOf "https://github.com/"
 ```
-replace github.com/tetrateio/tetrate => /Users/chirauki/src/tetrate-dos
-```
 
-This is a **local filesystem replace**, not a real dependency — `go build`/`go test` will only work on a machine with that path present. CI (`.github/workflows/go.yml`) instead pulls `github.com/tetrateio/tetrate` as a real (private) module over SSH, using `GOPRIVATE=github.com/tetrateio/*` and an `insteadOf` git rewrite for `https://github.com/` → `git@github.com:`. If you need to touch dependency resolution, be aware the local machine and CI resolve this module differently.
+Without them you get an opaque 404/410 rather than an auth error. CI (`.github/workflows/go.yml`) sets up the same two things.
+
+There is **no** `replace` directive in `go.mod`. If you add one pointing at a local checkout for development, remember that it makes the `require` line inert — bumping the version while a replace is active silently does nothing.
+
+To bump this dependency, follow the `updating-tetrate-dependency` skill in `.claude/skills/` rather than doing it ad hoc: the generated provider code and docs must be regenerated and committed in the same changeset, and the generator *skips* non-conforming resources with a warning instead of failing, so a successful build does not prove nothing was lost.
+
+## CI trigger gotcha
+
+`.github/workflows/go.yml` (the `check`/`build` jobs) runs on **`pull_request` only** — it never runs on pushes to `main`. A merged commit therefore has no CI run of its own; the evidence that `main` is green is the PR's run plus the fact that a squash onto an unchanged base produces an identical tree. Verify locally (`make check && make test`) before tagging a release.
 
 ## Common commands
 
