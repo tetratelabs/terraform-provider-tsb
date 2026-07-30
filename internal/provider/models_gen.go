@@ -969,20 +969,21 @@ func flattenGatewayIngressGateway(ctx context.Context, p *v23.IngressGateway, m 
 
 // GatewayInstallGatewayModel is the Terraform model for GatewaySpec.
 type GatewayInstallGatewayModel struct {
-	ID                       types.String                   `tfsdk:"id"`
-	Parent                   types.String                   `tfsdk:"parent"`
-	Name                     types.String                   `tfsdk:"name"`
-	ConnectionDrainDuration  *DurationModel                 `tfsdk:"connection_drain_duration"`
-	Revision                 types.String                   `tfsdk:"revision"`
-	Type                     types.String                   `tfsdk:"type"`
-	Concurrency              types.Int64                    `tfsdk:"concurrency"`
-	TargetNamespace          types.String                   `tfsdk:"target_namespace"`
-	TargetCluster            types.String                   `tfsdk:"target_cluster"`
-	DisplayName              types.String                   `tfsdk:"display_name"`
-	Description              types.String                   `tfsdk:"description"`
-	ConfigGenerationMetadata *ConfigGenerationMetadataModel `tfsdk:"config_generation_metadata"`
-	KubeSpec                 *KubernetesComponentSpecModel  `tfsdk:"kube_spec"`
-	ProxyConfigOverride      jsontypes.Normalized           `tfsdk:"proxy_config_override"`
+	ID                            types.String                   `tfsdk:"id"`
+	Parent                        types.String                   `tfsdk:"parent"`
+	Name                          types.String                   `tfsdk:"name"`
+	ConnectionDrainDuration       *DurationModel                 `tfsdk:"connection_drain_duration"`
+	TerminationGracePeriodSeconds types.Int64                    `tfsdk:"termination_grace_period_seconds"`
+	Revision                      types.String                   `tfsdk:"revision"`
+	Type                          types.String                   `tfsdk:"type"`
+	Concurrency                   types.Int64                    `tfsdk:"concurrency"`
+	TargetNamespace               types.String                   `tfsdk:"target_namespace"`
+	TargetCluster                 types.String                   `tfsdk:"target_cluster"`
+	DisplayName                   types.String                   `tfsdk:"display_name"`
+	Description                   types.String                   `tfsdk:"description"`
+	ConfigGenerationMetadata      *ConfigGenerationMetadataModel `tfsdk:"config_generation_metadata"`
+	KubeSpec                      *KubernetesComponentSpecModel  `tfsdk:"kube_spec"`
+	ProxyConfigOverride           jsontypes.Normalized           `tfsdk:"proxy_config_override"`
 }
 
 // expandGatewayInstallGateway converts the Terraform model into a GatewaySpec proto.
@@ -996,6 +997,10 @@ func expandGatewayInstallGateway(ctx context.Context, m *GatewayInstallGatewayMo
 		v, d := expandDuration(ctx, m.ConnectionDrainDuration)
 		diags.Append(d...)
 		out.ConnectionDrainDuration = v
+	}
+	if !m.TerminationGracePeriodSeconds.IsNull() && !m.TerminationGracePeriodSeconds.IsUnknown() {
+		v := int32(m.TerminationGracePeriodSeconds.ValueInt64())
+		out.TerminationGracePeriodSeconds = &v
 	}
 	out.Revision = m.Revision.ValueString()
 	out.Type = v1alpha1.GatewaySpec_Type(v1alpha1.GatewaySpec_Type_value[m.Type.ValueString()])
@@ -1035,6 +1040,11 @@ func flattenGatewayInstallGateway(ctx context.Context, p *v1alpha1.GatewaySpec, 
 		m.ConnectionDrainDuration = &nm
 	} else {
 		m.ConnectionDrainDuration = nil
+	}
+	if p.TerminationGracePeriodSeconds != nil {
+		m.TerminationGracePeriodSeconds = types.Int64Value(int64(*p.TerminationGracePeriodSeconds))
+	} else {
+		m.TerminationGracePeriodSeconds = types.Int64Null()
 	}
 	m.Revision = stringOrNull(p.Revision)
 	m.Type = types.StringValue(p.Type.String())
@@ -4314,11 +4324,12 @@ func flattenGatewayWorkloadSelector(ctx context.Context, p *v23.WorkloadSelector
 
 // GatewaySpecModel is the Terraform model for GatewaySpec.
 type GatewaySpecModel struct {
-	ConnectionDrainDuration *DurationModel                `tfsdk:"connection_drain_duration"`
-	Revision                types.String                  `tfsdk:"revision"`
-	Type                    types.String                  `tfsdk:"type"`
-	Concurrency             types.Int64                   `tfsdk:"concurrency"`
-	KubeSpec                *KubernetesComponentSpecModel `tfsdk:"kube_spec"`
+	ConnectionDrainDuration       *DurationModel                `tfsdk:"connection_drain_duration"`
+	Revision                      types.String                  `tfsdk:"revision"`
+	Type                          types.String                  `tfsdk:"type"`
+	Concurrency                   types.Int64                   `tfsdk:"concurrency"`
+	TerminationGracePeriodSeconds types.Int64                   `tfsdk:"termination_grace_period_seconds"`
+	KubeSpec                      *KubernetesComponentSpecModel `tfsdk:"kube_spec"`
 }
 
 // expandGatewaySpec converts the Terraform model into a GatewaySpec proto.
@@ -4338,6 +4349,10 @@ func expandGatewaySpec(ctx context.Context, m *GatewaySpecModel) (*v23.GatewaySp
 	if !m.Concurrency.IsNull() && !m.Concurrency.IsUnknown() {
 		v := int32(m.Concurrency.ValueInt64())
 		out.Concurrency = &v
+	}
+	if !m.TerminationGracePeriodSeconds.IsNull() && !m.TerminationGracePeriodSeconds.IsUnknown() {
+		v := int32(m.TerminationGracePeriodSeconds.ValueInt64())
+		out.TerminationGracePeriodSeconds = &v
 	}
 	if m.KubeSpec != nil {
 		v, d := expandKubernetesComponentSpec(ctx, m.KubeSpec)
@@ -4363,6 +4378,11 @@ func flattenGatewaySpec(ctx context.Context, p *v23.GatewaySpec, m *GatewaySpecM
 		m.Concurrency = types.Int64Value(int64(*p.Concurrency))
 	} else {
 		m.Concurrency = types.Int64Null()
+	}
+	if p.TerminationGracePeriodSeconds != nil {
+		m.TerminationGracePeriodSeconds = types.Int64Value(int64(*p.TerminationGracePeriodSeconds))
+	} else {
+		m.TerminationGracePeriodSeconds = types.Int64Null()
 	}
 	if p.KubeSpec != nil {
 		var nm KubernetesComponentSpecModel
@@ -8787,6 +8807,7 @@ type OIDCConfigModel struct {
 	RedirectPathMatcher types.String             `tfsdk:"redirect_path_matcher"`
 	SignoutPath         types.String             `tfsdk:"signout_path"`
 	UseRefreshToken     *BoolValueModel          `tfsdk:"use_refresh_token"`
+	CookieConfig        *OIDCCookieConfigModel   `tfsdk:"cookie_config"`
 }
 
 // expandOIDCConfig converts the Terraform model into a OIDCConfig proto.
@@ -8815,6 +8836,11 @@ func expandOIDCConfig(ctx context.Context, m *OIDCConfigModel) (*v210.OIDCConfig
 		v, d := expandBoolValue(ctx, m.UseRefreshToken)
 		diags.Append(d...)
 		out.UseRefreshToken = v
+	}
+	if m.CookieConfig != nil {
+		v, d := expandOIDCCookieConfig(ctx, m.CookieConfig)
+		diags.Append(d...)
+		out.CookieConfig = v
 	}
 	return out, diags
 }
@@ -8847,6 +8873,13 @@ func flattenOIDCConfig(ctx context.Context, p *v210.OIDCConfig, m *OIDCConfigMod
 		m.UseRefreshToken = &nm
 	} else {
 		m.UseRefreshToken = nil
+	}
+	if p.CookieConfig != nil {
+		var nm OIDCCookieConfigModel
+		diags.Append(flattenOIDCCookieConfig(ctx, p.CookieConfig, &nm)...)
+		m.CookieConfig = &nm
+	} else {
+		m.CookieConfig = nil
 	}
 	return diags
 }
@@ -11624,6 +11657,29 @@ func flattenOIDCProviderConfig(ctx context.Context, p *v210.OIDCProviderConfig, 
 	} else {
 		m.Tls = nil
 	}
+	return diags
+}
+
+// OIDCCookieConfigModel is the Terraform model for OIDCCookieConfig.
+type OIDCCookieConfigModel struct {
+	SameSite types.String `tfsdk:"same_site"`
+}
+
+// expandOIDCCookieConfig converts the Terraform model into a OIDCCookieConfig proto.
+func expandOIDCCookieConfig(ctx context.Context, m *OIDCCookieConfigModel) (*v210.OIDCCookieConfig, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	if m == nil {
+		return nil, diags
+	}
+	out := &v210.OIDCCookieConfig{}
+	out.SameSite = v210.OIDCCookieConfig_SameSite(v210.OIDCCookieConfig_SameSite_value[m.SameSite.ValueString()])
+	return out, diags
+}
+
+// flattenOIDCCookieConfig writes a OIDCCookieConfig proto into the Terraform model.
+func flattenOIDCCookieConfig(ctx context.Context, p *v210.OIDCCookieConfig, m *OIDCCookieConfigModel) diag.Diagnostics {
+	var diags diag.Diagnostics
+	m.SameSite = types.StringValue(p.SameSite.String())
 	return diags
 }
 
