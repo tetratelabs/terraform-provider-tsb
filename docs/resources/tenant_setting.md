@@ -117,6 +117,7 @@ Optional:
 
 - `auth_scopes` (List of String) Optional list of OAuth scopes to be claimed in the authorization request. If not specified, defaults to `user` scope. OAuth RFC https://tools.ietf.org/html/rfc6749#section-3.3
 - `auth_type` (String) Defines how client_id and client_secret are sent in OAuth client to OAuth server requests. RFC https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1
+- `cookie_config` (Attributes) Configuration applied to the cookies set by the proxy during the OIDC authentication flow. Unlike Envoy, which allows configuring each cookie individually, a single cookie configuration is applied uniformly to every cookie the proxy sets (bearer token, HMAC, expiry, ID token, refresh token, nonce, and code verifier cookies). If not specified, the proxy defaults are used for all cookies. (see [below for nested schema](#nestedatt--default_security_setting--authentication_settings--http--oidc--cookie_config))
 - `grant_type` (String) Configure the [authorization grant type to be used](https://datatracker.ietf.org/doc/html/rfc6749#section-1.3)
 - `redirect_path_matcher` (String) Matching criteria used to determine whether a path appears to be the result of a redirect from the authorization server. The query and fragment string (if present) are removed in the URL path portion. For example, the path `/data` will match URI header `/data#fragment?param=value`. If not provided, default is derived from redirect_uri path Only exact match is configurable
 - `signout_path` (String) The path to sign a user out, clearing their credential cookies. If not provided, default is `/signout` Only exact match is configurable
@@ -157,6 +158,14 @@ Optional:
 - `private_key` (String) Private key file associated with the client certificate. This is mandatory for mutual TLS and must not be specified for simple TLS
 
 
+
+
+<a id="nestedatt--default_security_setting--authentication_settings--http--oidc--cookie_config"></a>
+### Nested Schema for `default_security_setting.authentication_settings.http.oidc.cookie_config`
+
+Optional:
+
+- `same_site` (String) The value used for the `SameSite` cookie attribute. If not specified, defaults to `DISABLED` (the attribute is not set).
 
 
 <a id="nestedatt--default_security_setting--authentication_settings--http--oidc--use_refresh_token"></a>
