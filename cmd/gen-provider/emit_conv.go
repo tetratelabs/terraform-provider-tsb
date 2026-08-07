@@ -137,7 +137,14 @@ func (g *generator) expandField(p fieldPlan) ([]j.Code, error) {
 					j.Id("diags").Dot("Append").Call(mDot.Clone().Dot("ElementsAs").Call(j.Id("ctx"), j.Op("&").Id("tmp"), j.False()).Op("...")),
 					outDot.Clone().Op("=").Make(j.Index().Qual(pkg, name), j.Len(j.Id("tmp"))),
 					j.For(j.Id("i").Op(":=").Range().Id("tmp")).Block(
-						outDot.Clone().Index(j.Id("i")).Op("=").Qual(pkg, name).Call(j.Qual(pkg, name+"_value").Index(j.Id("tmp").Index(j.Id("i")))),
+						outDot.Clone().Index(j.Id("i")).Op("=").Qual(pkg, name).Call(
+							j.Id("expandEnumString").Call(
+								j.Id("tmp").Index(j.Id("i")),
+								j.Qual(pkg, name+"_value"),
+								j.Lit(p.Key),
+								j.Op("&").Id("diags"),
+							),
+						),
 					),
 				),
 			}, nil
@@ -198,7 +205,7 @@ func (g *generator) expandScalar(p fieldPlan, mDot, outDot *j.Statement) ([]j.Co
 	if p.OptionalScalar {
 		gt = p.GoType.Elem() // *T -> T (for enum type naming)
 	}
-	expr, err := scalarToProto(p.FD, gt, mDot)
+	expr, err := scalarToProto(p.FD, gt, mDot, p.Key)
 	if err != nil {
 		return nil, err
 	}
@@ -215,8 +222,9 @@ func (g *generator) expandScalar(p fieldPlan, mDot, outDot *j.Statement) ([]j.Co
 }
 
 // scalarToProto returns the Go expression converting a Terraform scalar accessor
-// (src) into the proto field's native value.
-func scalarToProto(fd protoreflect.FieldDescriptor, goType reflect.Type, src *j.Statement) (*j.Statement, error) {
+// (src) into the proto field's native value. key is the attribute's tfsdk name,
+// used to name the attribute in enum diagnostics.
+func scalarToProto(fd protoreflect.FieldDescriptor, goType reflect.Type, src *j.Statement, key string) (*j.Statement, error) {
 	switch fd.Kind() {
 	case protoreflect.StringKind:
 		return src.Clone().Dot("ValueString").Call(), nil
@@ -226,7 +234,14 @@ func scalarToProto(fd protoreflect.FieldDescriptor, goType reflect.Type, src *j.
 		return src.Clone().Dot("ValueBool").Call(), nil
 	case protoreflect.EnumKind:
 		pkg, name := goType.PkgPath(), goType.Name()
-		return j.Qual(pkg, name).Call(j.Qual(pkg, name+"_value").Index(src.Clone().Dot("ValueString").Call())), nil
+		return j.Qual(pkg, name).Call(
+			j.Id("expandEnum").Call(
+				src.Clone(),
+				j.Qual(pkg, name+"_value"),
+				j.Lit(key),
+				j.Op("&").Id("diags"),
+			),
+		), nil
 	case protoreflect.FloatKind:
 		return j.Float32().Parens(src.Clone().Dot("ValueFloat64").Call()), nil
 	case protoreflect.DoubleKind:
@@ -512,7 +527,7 @@ func (g *generator) expandOneof(p fieldPlan) ([]j.Code, error) {
 		}, nil
 	}
 
-	expr, err := scalarToProto(fd, p.GoType, mDot)
+	expr, err := scalarToProto(fd, p.GoType, mDot, p.Key)
 	if err != nil {
 		return nil, err
 	}
