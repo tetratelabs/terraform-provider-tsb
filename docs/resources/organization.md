@@ -27,6 +27,7 @@ description: |-
 - `description` (String) A description of the resource.
 - `display_name` (String) User friendly name for the resource.
 - `profiles` (List of String) List of profiles attached to the Organization to be used to propagate default and mandatory configurations down to the children.
+- `service_account_key_settings` (Attributes) Settings that govern how the key pairs of the service accounts in this organization are generated. They are only applied to the keys generated after the settings are changed; existing service account keys are left untouched. If omitted, RSA keys of 2048 bits are generated. (see [below for nested schema](#nestedatt--service_account_key_settings))
 - `system_namespaces` (List of String) List of namespaces that will be considered as system namespaces for the organization and will not be able to be onboarded into TSB. System namespaces are namespaces that should not have sidecars injected and don't be configured with Istio injection. This is useful for namespaces that are used for infrastructure components like monitoring, logging, cloud provider components, etc. and that should not be managed by TSB in the cluster namespace onboarding workflows.
 
 ### Read-Only
@@ -40,3 +41,12 @@ Optional:
 
 - `annotations` (Map of String) Set of key value paris that will be added into the `metadata.annotations` field of the Istio generated configurations.
 - `labels` (Map of String) Set of key value paris that will be added into the `metadata.labels` field of the Istio generated configurations.
+
+
+<a id="nestedatt--service_account_key_settings"></a>
+### Nested Schema for `service_account_key_settings`
+
+Optional:
+
+- `algorithm` (String) Algorithm used to generate the service account key pairs.
+- `rsa_key_size` (Number) Size in bits of the generated RSA keys. It only applies when `algorithm` is an RSA based one, and must be left unset for the ECDSA ones, where the curve is determined by the algorithm itself. Supported values are 2048, 3072 and 4096. Defaults to 2048.

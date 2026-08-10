@@ -1573,15 +1573,16 @@ func flattenOIDC(ctx context.Context, p *v2.OIDC, m *OIDCModel) diag.Diagnostics
 
 // OrganizationModel is the Terraform model for Organization.
 type OrganizationModel struct {
-	ID                        types.String                   `tfsdk:"id"`
-	Parent                    types.String                   `tfsdk:"parent"`
-	Name                      types.String                   `tfsdk:"name"`
-	DisplayName               types.String                   `tfsdk:"display_name"`
-	Description               types.String                   `tfsdk:"description"`
-	DeletionProtectionEnabled types.Bool                     `tfsdk:"deletion_protection_enabled"`
-	Profiles                  types.List                     `tfsdk:"profiles"`
-	ConfigGenerationMetadata  *ConfigGenerationMetadataModel `tfsdk:"config_generation_metadata"`
-	SystemNamespaces          types.List                     `tfsdk:"system_namespaces"`
+	ID                        types.String                                 `tfsdk:"id"`
+	Parent                    types.String                                 `tfsdk:"parent"`
+	Name                      types.String                                 `tfsdk:"name"`
+	DisplayName               types.String                                 `tfsdk:"display_name"`
+	Description               types.String                                 `tfsdk:"description"`
+	DeletionProtectionEnabled types.Bool                                   `tfsdk:"deletion_protection_enabled"`
+	Profiles                  types.List                                   `tfsdk:"profiles"`
+	ConfigGenerationMetadata  *ConfigGenerationMetadataModel               `tfsdk:"config_generation_metadata"`
+	SystemNamespaces          types.List                                   `tfsdk:"system_namespaces"`
+	ServiceAccountKeySettings *Organization_ServiceAccountKeySettingsModel `tfsdk:"service_account_key_settings"`
 }
 
 // expandOrganization converts the Terraform model into a Organization proto.
@@ -1604,6 +1605,11 @@ func expandOrganization(ctx context.Context, m *OrganizationModel) (*v2.Organiza
 	}
 	if !m.SystemNamespaces.IsNull() && !m.SystemNamespaces.IsUnknown() {
 		diags.Append(m.SystemNamespaces.ElementsAs(ctx, &out.SystemNamespaces, false)...)
+	}
+	if m.ServiceAccountKeySettings != nil {
+		v, d := expandOrganization_ServiceAccountKeySettings(ctx, m.ServiceAccountKeySettings)
+		diags.Append(d...)
+		out.ServiceAccountKeySettings = v
 	}
 	return out, diags
 }
@@ -1631,6 +1637,13 @@ func flattenOrganization(ctx context.Context, p *v2.Organization, m *Organizatio
 		lv, d := listOrNull(ctx, types.StringType, p.SystemNamespaces)
 		diags.Append(d...)
 		m.SystemNamespaces = lv
+	}
+	if p.ServiceAccountKeySettings != nil {
+		var nm Organization_ServiceAccountKeySettingsModel
+		diags.Append(flattenOrganization_ServiceAccountKeySettings(ctx, p.ServiceAccountKeySettings, &nm)...)
+		m.ServiceAccountKeySettings = &nm
+	} else {
+		m.ServiceAccountKeySettings = nil
 	}
 	return diags
 }
@@ -4909,6 +4922,32 @@ func flattenOIDCSettings(ctx context.Context, p *v1alpha11.OIDCSettings, m *OIDC
 	} else {
 		m.JitProvisioning = nil
 	}
+	return diags
+}
+
+// Organization_ServiceAccountKeySettingsModel is the Terraform model for Organization_ServiceAccountKeySettings.
+type Organization_ServiceAccountKeySettingsModel struct {
+	Algorithm  types.String `tfsdk:"algorithm"`
+	RsaKeySize types.Int64  `tfsdk:"rsa_key_size"`
+}
+
+// expandOrganization_ServiceAccountKeySettings converts the Terraform model into a Organization_ServiceAccountKeySettings proto.
+func expandOrganization_ServiceAccountKeySettings(ctx context.Context, m *Organization_ServiceAccountKeySettingsModel) (*v2.Organization_ServiceAccountKeySettings, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	if m == nil {
+		return nil, diags
+	}
+	out := &v2.Organization_ServiceAccountKeySettings{}
+	out.Algorithm = v2.Organization_ServiceAccountKeySettings_Algorithm(expandEnum(m.Algorithm, v2.Organization_ServiceAccountKeySettings_Algorithm_value, "algorithm", &diags))
+	out.RsaKeySize = uint32(m.RsaKeySize.ValueInt64())
+	return out, diags
+}
+
+// flattenOrganization_ServiceAccountKeySettings writes a Organization_ServiceAccountKeySettings proto into the Terraform model.
+func flattenOrganization_ServiceAccountKeySettings(ctx context.Context, p *v2.Organization_ServiceAccountKeySettings, m *Organization_ServiceAccountKeySettingsModel) diag.Diagnostics {
+	var diags diag.Diagnostics
+	m.Algorithm = types.StringValue(p.Algorithm.String())
+	m.RsaKeySize = types.Int64Value(int64(p.RsaKeySize))
 	return diags
 }
 
@@ -9589,16 +9628,17 @@ func flattenImage(ctx context.Context, p *v1alpha14.Image, m *ImageModel) diag.D
 
 // ControlPlaneSpecModel is the Terraform model for ControlPlaneSpec.
 type ControlPlaneSpecModel struct {
-	Hub               types.String                             `tfsdk:"hub"`
-	ImagePullSecrets  []LocalObjectReferenceModel              `tfsdk:"image_pull_secrets"`
-	Components        *ControlPlaneComponentSetModel           `tfsdk:"components"`
-	ProviderSettings  *ProviderSettingsModel                   `tfsdk:"provider_settings"`
-	ManagementPlane   *ManagementPlaneSettingsModel            `tfsdk:"management_plane"`
-	MeshExpansion     *MeshExpansionSettingsModel              `tfsdk:"mesh_expansion"`
-	TelemetryStore    *ControlPlaneSpec_TelemetryStoreModel    `tfsdk:"telemetry_store"`
-	MeshObservability *ControlPlaneSpec_MeshObservabilityModel `tfsdk:"mesh_observability"`
-	Tier1Cluster      types.Bool                               `tfsdk:"tier1_cluster"`
-	Mode              types.String                             `tfsdk:"mode"`
+	Hub                           types.String                             `tfsdk:"hub"`
+	ImagePullSecrets              []LocalObjectReferenceModel              `tfsdk:"image_pull_secrets"`
+	Components                    *ControlPlaneComponentSetModel           `tfsdk:"components"`
+	ProviderSettings              *ProviderSettingsModel                   `tfsdk:"provider_settings"`
+	ManagementPlane               *ManagementPlaneSettingsModel            `tfsdk:"management_plane"`
+	MeshExpansion                 *MeshExpansionSettingsModel              `tfsdk:"mesh_expansion"`
+	TelemetryStore                *ControlPlaneSpec_TelemetryStoreModel    `tfsdk:"telemetry_store"`
+	TelemetryStoreMigrationTarget *ControlPlaneSpec_TelemetryStoreModel    `tfsdk:"telemetry_store_migration_target"`
+	MeshObservability             *ControlPlaneSpec_MeshObservabilityModel `tfsdk:"mesh_observability"`
+	Tier1Cluster                  types.Bool                               `tfsdk:"tier1_cluster"`
+	Mode                          types.String                             `tfsdk:"mode"`
 }
 
 // expandControlPlaneSpec converts the Terraform model into a ControlPlaneSpec proto.
@@ -9640,6 +9680,11 @@ func expandControlPlaneSpec(ctx context.Context, m *ControlPlaneSpecModel) (*v1a
 		v, d := expandControlPlaneSpec_TelemetryStore(ctx, m.TelemetryStore)
 		diags.Append(d...)
 		out.TelemetryStore = v
+	}
+	if m.TelemetryStoreMigrationTarget != nil {
+		v, d := expandControlPlaneSpec_TelemetryStore(ctx, m.TelemetryStoreMigrationTarget)
+		diags.Append(d...)
+		out.TelemetryStoreMigrationTarget = v
 	}
 	if m.MeshObservability != nil {
 		v, d := expandControlPlaneSpec_MeshObservability(ctx, m.MeshObservability)
@@ -9695,6 +9740,13 @@ func flattenControlPlaneSpec(ctx context.Context, p *v1alpha15.ControlPlaneSpec,
 		m.TelemetryStore = &nm
 	} else {
 		m.TelemetryStore = nil
+	}
+	if p.TelemetryStoreMigrationTarget != nil {
+		var nm ControlPlaneSpec_TelemetryStoreModel
+		diags.Append(flattenControlPlaneSpec_TelemetryStore(ctx, p.TelemetryStoreMigrationTarget, &nm)...)
+		m.TelemetryStoreMigrationTarget = &nm
+	} else {
+		m.TelemetryStoreMigrationTarget = nil
 	}
 	if p.MeshObservability != nil {
 		var nm ControlPlaneSpec_MeshObservabilityModel
@@ -14915,6 +14967,7 @@ type OapModel struct {
 	StorageIndexMergingEnabled  types.Bool                    `tfsdk:"storage_index_merging_enabled"`
 	KubeSpec                    *KubernetesComponentSpecModel `tfsdk:"kube_spec"`
 	LogLevel                    types.String                  `tfsdk:"log_level"`
+	AlsAuthLogEnabled           types.Bool                    `tfsdk:"als_auth_log_enabled"`
 }
 
 // expandOap converts the Terraform model into a Oap proto.
@@ -14933,6 +14986,7 @@ func expandOap(ctx context.Context, m *OapModel) (*v1alpha15.Oap, diag.Diagnosti
 		out.KubeSpec = v
 	}
 	out.LogLevel = m.LogLevel.ValueString()
+	out.AlsAuthLogEnabled = m.AlsAuthLogEnabled.ValueBool()
 	return out, diags
 }
 
@@ -14950,6 +15004,7 @@ func flattenOap(ctx context.Context, p *v1alpha15.Oap, m *OapModel) diag.Diagnos
 		m.KubeSpec = nil
 	}
 	m.LogLevel = stringOrNull(p.LogLevel)
+	m.AlsAuthLogEnabled = types.BoolValue(p.AlsAuthLogEnabled)
 	return diags
 }
 

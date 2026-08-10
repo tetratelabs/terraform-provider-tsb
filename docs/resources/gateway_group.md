@@ -24,7 +24,7 @@ description: |-
 ### Optional
 
 - `config_generation_metadata` (Attributes) Default metadata values that will be propagated to the children Istio generated configurations. When using YAML APIs like `tctl` or `gitops`, put them into the `metadata.labels` or `metadata.annotations` instead. This field is only necessary when using gRPC APIs directly. (see [below for nested schema](#nestedatt--config_generation_metadata))
-- `config_mode` (String) The Configuration types that will be added to this group. `BRIDGED` mode indicates that configurations added to this group will use Tetrate APIs such as `IngressGateway`. `DIRECT` mode indicates that configurations added to this group will use Istio Networking v1beta1 APIs such as `Gateway` and `VirtualService`, Istio Security v1beta1 APIs such as `RequestAuthentication` and `AuthorizationPolicy`. Defaults to `BRIDGED` mode.
+- `config_mode` (String) The Configuration types that will be added to this group. `BRIDGED` mode indicates that configurations added to this group will use Tetrate APIs such as `IngressGateway`. `DIRECT` mode indicates that configurations added to this group will use Istio Networking v1beta1 APIs such as `Gateway` and `VirtualService`, Istio Security v1beta1 APIs such as `RequestAuthentication` and `AuthorizationPolicy`. Defaults to `BRIDGED` mode. Possible values: BRIDGED, DIRECT.
 - `deletion_protection_enabled` (Boolean) When set, prevents the resource from being deleted. In order to delete the resource this property needs to be set to `false` first.
 - `description` (String) A description of the resource.
 - `display_name` (String) User friendly name for the resource.

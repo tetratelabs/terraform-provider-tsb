@@ -35,7 +35,7 @@ description: |-
 
 Required:
 
-- `permissions` (List of String) The set of actions allowed for these APIs. The current version supports requires the kind, but this constraint will be relaxed in upcoming releases so that rules can apply globally to an entire API group.
+- `permissions` (List of String) The set of actions allowed for these APIs. The current version supports requires the kind, but this constraint will be relaxed in upcoming releases so that rules can apply globally to an entire API group. Possible values: INVALID, READ, WRITE, CREATE, DELETE, SET_POLICY, GET_POLICY.
 
 Optional:
 

@@ -69,7 +69,7 @@ Optional:
 
 Optional:
 
-- `mode` (String) Criteria for selecting traffic by their direction. Note that CLIENT and SERVER are analogous to OUTBOUND and INBOUND, respectively. For the gateway, the field should be CLIENT or CLIENT_AND_SERVER. If not specified, the default value is CLIENT_AND_SERVER.
+- `mode` (String) Criteria for selecting traffic by their direction. Note that CLIENT and SERVER are analogous to OUTBOUND and INBOUND, respectively. For the gateway, the field should be CLIENT or CLIENT_AND_SERVER. If not specified, the default value is CLIENT_AND_SERVER. Possible values: UNDEFINED, CLIENT, SERVER, CLIENT_AND_SERVER.
 - `ports` (Attributes List) Criteria for selecting traffic by their destination port. More specifically, for the outbound traffic, the destination port would be the port of the target service. On the other hand, for the inbound traffic, the destination port is the port bound by the server process in the same Pod. If one of the given `ports` is matched, this condition is evaluated to true. If not specified, this condition is evaluated to true for any port. (see [below for nested schema](#nestedatt--extension--match--ports))
 
 <a id="nestedatt--extension--match--ports"></a>
@@ -162,9 +162,9 @@ Required:
 Optional:
 
 - `auth_scopes` (List of String) Optional list of OAuth scopes to be claimed in the authorization request. If not specified, defaults to `user` scope. OAuth RFC https://tools.ietf.org/html/rfc6749#section-3.3
-- `auth_type` (String) Defines how client_id and client_secret are sent in OAuth client to OAuth server requests. RFC https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1
+- `auth_type` (String) Defines how client_id and client_secret are sent in OAuth client to OAuth server requests. RFC https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1. Possible values: DEFAULT_AUTH_TYPE, URL_ENCODED_BODY, BASIC_AUTH.
 - `cookie_config` (Attributes) Configuration applied to the cookies set by the proxy during the OIDC authentication flow. Unlike Envoy, which allows configuring each cookie individually, a single cookie configuration is applied uniformly to every cookie the proxy sets (bearer token, HMAC, expiry, ID token, refresh token, nonce, and code verifier cookies). If not specified, the proxy defaults are used for all cookies. (see [below for nested schema](#nestedatt--external_servers--authentication--oidc--cookie_config))
-- `grant_type` (String) Configure the [authorization grant type to be used](https://datatracker.ietf.org/doc/html/rfc6749#section-1.3)
+- `grant_type` (String) Configure the [authorization grant type to be used](https://datatracker.ietf.org/doc/html/rfc6749#section-1.3). Possible values: DEFAULT_GRANT_TYPE, AUTHORIZATION_CODE.
 - `redirect_path_matcher` (String) Matching criteria used to determine whether a path appears to be the result of a redirect from the authorization server. The query and fragment string (if present) are removed in the URL path portion. For example, the path `/data` will match URI header `/data#fragment?param=value`. If not provided, default is derived from redirect_uri path Only exact match is configurable
 - `signout_path` (String) The path to sign a user out, clearing their credential cookies. If not provided, default is `/signout` Only exact match is configurable
 - `use_refresh_token` (Attributes) Enable automatic access token refresh using associated refresh token [(see RFC 6749 section 6)](https://datatracker.ietf.org/doc/html/rfc6749#section-6) provided that the OAuth server supports that. If not set defaults to `true`. (see [below for nested schema](#nestedatt--external_servers--authentication--oidc--use_refresh_token))
@@ -190,7 +190,7 @@ Optional:
 Optional:
 
 - `files` (Attributes) TLS key source from files. (see [below for nested schema](#nestedatt--external_servers--authentication--oidc--provider--tls--files))
-- `mode` (String) Set this to DISABLED to disable TLS (not recommended from the security perspective), SIMPLE for one-way TLS and MUTUAL for mutual TLS (where client is required to present its certificate as well)
+- `mode` (String) Set this to DISABLED to disable TLS (not recommended from the security perspective), SIMPLE for one-way TLS and MUTUAL for mutual TLS (where client is required to present its certificate as well). Possible values: DISABLED, SIMPLE, MUTUAL, ISTIO_MUTUAL.
 - `secret_name` (String) TLS key source from a Kubernetes Secret. This is applicable for gateway workloads.
 - `subject_alt_names` (List of String) Subject alternative names is the list of names that are accepted as service name as part of TLS handshake
 
@@ -211,7 +211,7 @@ Optional:
 
 Optional:
 
-- `same_site` (String) The value used for the `SameSite` cookie attribute. If not specified, defaults to `DISABLED` (the attribute is not set).
+- `same_site` (String) The value used for the `SameSite` cookie attribute. If not specified, defaults to `DISABLED` (the attribute is not set). Possible values: DISABLED, STRICT, LAX, NONE.
 
 
 <a id="nestedatt--external_servers--authentication--oidc--use_refresh_token"></a>
@@ -314,7 +314,7 @@ Optional:
 Optional:
 
 - `files` (Attributes) TLS key source from files. (see [below for nested schema](#nestedatt--external_servers--authorization--external--tls--files))
-- `mode` (String) Set this to DISABLED to disable TLS (not recommended from the security perspective), SIMPLE for one-way TLS and MUTUAL for mutual TLS (where client is required to present its certificate as well)
+- `mode` (String) Set this to DISABLED to disable TLS (not recommended from the security perspective), SIMPLE for one-way TLS and MUTUAL for mutual TLS (where client is required to present its certificate as well). Possible values: DISABLED, SIMPLE, MUTUAL, ISTIO_MUTUAL.
 - `secret_name` (String) TLS key source from a Kubernetes Secret. This is applicable for gateway workloads.
 - `subject_alt_names` (List of String) Subject alternative names is the list of names that are accepted as service name as part of TLS handshake
 
@@ -493,7 +493,7 @@ Optional:
 Optional:
 
 - `files` (Attributes) TLS key source from files. (see [below for nested schema](#nestedatt--external_servers--rate_limiting--external_service--tls--files))
-- `mode` (String) Set this to DISABLED to disable TLS (not recommended from the security perspective), SIMPLE for one-way TLS and MUTUAL for mutual TLS (where client is required to present its certificate as well)
+- `mode` (String) Set this to DISABLED to disable TLS (not recommended from the security perspective), SIMPLE for one-way TLS and MUTUAL for mutual TLS (where client is required to present its certificate as well). Possible values: DISABLED, SIMPLE, MUTUAL, ISTIO_MUTUAL.
 - `secret_name` (String) TLS key source from a Kubernetes Secret. This is applicable for gateway workloads.
 - `subject_alt_names` (List of String) Subject alternative names is the list of names that are accepted as service name as part of TLS handshake
 
@@ -706,7 +706,7 @@ Required:
 Required:
 
 - `requests_per_unit` (Number) Specifies the value of the rate limit.
-- `unit` (String) Specifies the unit of time for rate limit.
+- `unit` (String) Specifies the unit of time for rate limit. Possible values: UNKNOWN, SECOND, MINUTE, HOUR, DAY.
 
 
 
@@ -740,9 +740,9 @@ Optional:
 
 - `cipher_suites` (List of String) List of cipher suites to be used for TLS connections. Examples of cipher suites: - "TLS_RSA_WITH_AES_256_CBC_SHA" - "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256" - "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384" - "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256" - "TLS_RSA_WITH_3DES_EDE_CBC_SHA"
 - `files` (Attributes) Load the keys and certificates from files accessible to the ingress gateway workload. Only one of secretName or files must be specified. (see [below for nested schema](#nestedatt--external_servers--tls--files))
-- `max_protocol_version` (String) Set the maximum supported TLS protocol version. Valid options: TLS_AUTO, TLSV1_0, TLSV1_1, TLSV1_2, TLSV1_3.
-- `min_protocol_version` (String) Set the minimum supported TLS protocol version. Valid options: TLS_AUTO, TLSV1_0, TLSV1_1, TLSV1_2, TLSV1_3.
-- `mode` (String) Set this to SIMPLE, or MUTUAL for one-way TLS, mutual TLS respectively.
+- `max_protocol_version` (String) Set the maximum supported TLS protocol version. Valid options: TLS_AUTO, TLSV1_0, TLSV1_1, TLSV1_2, TLSV1_3. Possible values: TLS_AUTO, TLSV1_0, TLSV1_1, TLSV1_2, TLSV1_3.
+- `min_protocol_version` (String) Set the minimum supported TLS protocol version. Valid options: TLS_AUTO, TLSV1_0, TLSV1_1, TLSV1_2, TLSV1_3. Possible values: TLS_AUTO, TLSV1_0, TLSV1_1, TLSV1_2, TLSV1_3.
+- `mode` (String) Set this to SIMPLE, or MUTUAL for one-way TLS, mutual TLS respectively. Possible values: DISABLED, SIMPLE, MUTUAL, OPTIONAL_MUTUAL.
 - `secret_name` (String) The name of the secret in Kubernetes that holds the TLS certs including the CA certificates. For Unified Gateway config, if the secret is in a different namespace than the gateway, it must be prefixed with the namespace in the format of <namespace>/<secret_name>. For all other gateway types, the secret must be in the same namespace as the gateway resource. The secret (type generic) should contain the following keys and values: key: `<privateKey>`, cert: `<serverCert>`, cacert: `<CACertificate>`.
 - `subject_alt_names` (List of String) List of Subject Alternative Names (SAN) from the client's certificate that are accepted for client identity verification during the TLS handshake.
 
@@ -834,9 +834,9 @@ Required:
 Optional:
 
 - `auth_scopes` (List of String) Optional list of OAuth scopes to be claimed in the authorization request. If not specified, defaults to `user` scope. OAuth RFC https://tools.ietf.org/html/rfc6749#section-3.3
-- `auth_type` (String) Defines how client_id and client_secret are sent in OAuth client to OAuth server requests. RFC https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1
+- `auth_type` (String) Defines how client_id and client_secret are sent in OAuth client to OAuth server requests. RFC https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1. Possible values: DEFAULT_AUTH_TYPE, URL_ENCODED_BODY, BASIC_AUTH.
 - `cookie_config` (Attributes) Configuration applied to the cookies set by the proxy during the OIDC authentication flow. Unlike Envoy, which allows configuring each cookie individually, a single cookie configuration is applied uniformly to every cookie the proxy sets (bearer token, HMAC, expiry, ID token, refresh token, nonce, and code verifier cookies). If not specified, the proxy defaults are used for all cookies. (see [below for nested schema](#nestedatt--internal_servers--authentication--oidc--cookie_config))
-- `grant_type` (String) Configure the [authorization grant type to be used](https://datatracker.ietf.org/doc/html/rfc6749#section-1.3)
+- `grant_type` (String) Configure the [authorization grant type to be used](https://datatracker.ietf.org/doc/html/rfc6749#section-1.3). Possible values: DEFAULT_GRANT_TYPE, AUTHORIZATION_CODE.
 - `redirect_path_matcher` (String) Matching criteria used to determine whether a path appears to be the result of a redirect from the authorization server. The query and fragment string (if present) are removed in the URL path portion. For example, the path `/data` will match URI header `/data#fragment?param=value`. If not provided, default is derived from redirect_uri path Only exact match is configurable
 - `signout_path` (String) The path to sign a user out, clearing their credential cookies. If not provided, default is `/signout` Only exact match is configurable
 - `use_refresh_token` (Attributes) Enable automatic access token refresh using associated refresh token [(see RFC 6749 section 6)](https://datatracker.ietf.org/doc/html/rfc6749#section-6) provided that the OAuth server supports that. If not set defaults to `true`. (see [below for nested schema](#nestedatt--internal_servers--authentication--oidc--use_refresh_token))
@@ -862,7 +862,7 @@ Optional:
 Optional:
 
 - `files` (Attributes) TLS key source from files. (see [below for nested schema](#nestedatt--internal_servers--authentication--oidc--provider--tls--files))
-- `mode` (String) Set this to DISABLED to disable TLS (not recommended from the security perspective), SIMPLE for one-way TLS and MUTUAL for mutual TLS (where client is required to present its certificate as well)
+- `mode` (String) Set this to DISABLED to disable TLS (not recommended from the security perspective), SIMPLE for one-way TLS and MUTUAL for mutual TLS (where client is required to present its certificate as well). Possible values: DISABLED, SIMPLE, MUTUAL, ISTIO_MUTUAL.
 - `secret_name` (String) TLS key source from a Kubernetes Secret. This is applicable for gateway workloads.
 - `subject_alt_names` (List of String) Subject alternative names is the list of names that are accepted as service name as part of TLS handshake
 
@@ -883,7 +883,7 @@ Optional:
 
 Optional:
 
-- `same_site` (String) The value used for the `SameSite` cookie attribute. If not specified, defaults to `DISABLED` (the attribute is not set).
+- `same_site` (String) The value used for the `SameSite` cookie attribute. If not specified, defaults to `DISABLED` (the attribute is not set). Possible values: DISABLED, STRICT, LAX, NONE.
 
 
 <a id="nestedatt--internal_servers--authentication--oidc--use_refresh_token"></a>
@@ -986,7 +986,7 @@ Optional:
 Optional:
 
 - `files` (Attributes) TLS key source from files. (see [below for nested schema](#nestedatt--internal_servers--authorization--external--tls--files))
-- `mode` (String) Set this to DISABLED to disable TLS (not recommended from the security perspective), SIMPLE for one-way TLS and MUTUAL for mutual TLS (where client is required to present its certificate as well)
+- `mode` (String) Set this to DISABLED to disable TLS (not recommended from the security perspective), SIMPLE for one-way TLS and MUTUAL for mutual TLS (where client is required to present its certificate as well). Possible values: DISABLED, SIMPLE, MUTUAL, ISTIO_MUTUAL.
 - `secret_name` (String) TLS key source from a Kubernetes Secret. This is applicable for gateway workloads.
 - `subject_alt_names` (List of String) Subject alternative names is the list of names that are accepted as service name as part of TLS handshake
 
@@ -1120,9 +1120,9 @@ Optional:
 
 - `cipher_suites` (List of String) List of cipher suites to be used for TLS connections. Examples of cipher suites: - "TLS_RSA_WITH_AES_256_CBC_SHA" - "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256" - "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384" - "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256" - "TLS_RSA_WITH_3DES_EDE_CBC_SHA"
 - `files` (Attributes) Load the keys and certificates from files accessible to the ingress gateway workload. Only one of secretName or files must be specified. (see [below for nested schema](#nestedatt--tcp_external_servers--tls--files))
-- `max_protocol_version` (String) Set the maximum supported TLS protocol version. Valid options: TLS_AUTO, TLSV1_0, TLSV1_1, TLSV1_2, TLSV1_3.
-- `min_protocol_version` (String) Set the minimum supported TLS protocol version. Valid options: TLS_AUTO, TLSV1_0, TLSV1_1, TLSV1_2, TLSV1_3.
-- `mode` (String) Set this to SIMPLE, or MUTUAL for one-way TLS, mutual TLS respectively.
+- `max_protocol_version` (String) Set the maximum supported TLS protocol version. Valid options: TLS_AUTO, TLSV1_0, TLSV1_1, TLSV1_2, TLSV1_3. Possible values: TLS_AUTO, TLSV1_0, TLSV1_1, TLSV1_2, TLSV1_3.
+- `min_protocol_version` (String) Set the minimum supported TLS protocol version. Valid options: TLS_AUTO, TLSV1_0, TLSV1_1, TLSV1_2, TLSV1_3. Possible values: TLS_AUTO, TLSV1_0, TLSV1_1, TLSV1_2, TLSV1_3.
+- `mode` (String) Set this to SIMPLE, or MUTUAL for one-way TLS, mutual TLS respectively. Possible values: DISABLED, SIMPLE, MUTUAL, OPTIONAL_MUTUAL.
 - `secret_name` (String) The name of the secret in Kubernetes that holds the TLS certs including the CA certificates. For Unified Gateway config, if the secret is in a different namespace than the gateway, it must be prefixed with the namespace in the format of <namespace>/<secret_name>. For all other gateway types, the secret must be in the same namespace as the gateway resource. The secret (type generic) should contain the following keys and values: key: `<privateKey>`, cert: `<serverCert>`, cacert: `<CACertificate>`.
 - `subject_alt_names` (List of String) List of Subject Alternative Names (SAN) from the client's certificate that are accepted for client identity verification during the TLS handshake.
 

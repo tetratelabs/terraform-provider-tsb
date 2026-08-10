@@ -28,4 +28,4 @@ description: |-
 ### Read-Only
 
 - `id` (String) Fully-qualified name of the ServiceAccount resource.
-- `keys` (String) Keys associated with the service account. A default key-pair is automatically created when the Service Account is created. Note that TSB does not store the private keys, so it is up to the client to store the returned private keys securely, as they are only returned once after creation. Additional keys can be added (and deleted) by using the corresponding key management APIs. <!-- terraform code generation tags +protoc-gen-terraform:computed +protoc-gen-terraform:stateforunknown -->
+- `keys` (String) Keys associated with the service account. A default key-pair is automatically created when the Service Account is created. Note that TSB does not store the private keys, so it is up to the client to store the returned private keys securely, as they are only returned once after creation. Additional keys can be added (and deleted) by using the corresponding key management APIs.
