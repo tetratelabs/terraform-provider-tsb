@@ -32,4 +32,4 @@ description: |-
 ### Read-Only
 
 - `id` (String) Fully-qualified name of the Team resource.
-- `source_type` (String) Where the team comes from. It can be a local team that exists only in TSB (type LOCAL) or it can be a team that has been synchronized from the Identity Provider (for example: type LDAP). <!-- terraform code generation tags +protoc-gen-terraform:computed -->
+- `source_type` (String) Where the team comes from. It can be a local team that exists only in TSB (type LOCAL) or it can be a team that has been synchronized from the Identity Provider (for example: type LDAP). Possible values: INVALID, LDAP, LOCAL, AZURE, MANUAL, PINGAM, OIDC_PROVISIONED.

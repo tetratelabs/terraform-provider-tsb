@@ -33,7 +33,7 @@ description: |-
 - `target_cluster` (String) Cluster where the gateway will be deployed. Required when using TSB MP and TSB GitOps to deploy the gateway. Ignored when using as a pure kubernetes resource.
 - `target_namespace` (String) Namespace where the gateway will be deployed. Required when using TSB MP and TSB GitOps to deploy the gateway. Ignored when using as a pure kubernetes resource.
 - `termination_grace_period_seconds` (Number) The pod-level termination grace period, in seconds, for the gateway Deployment. This is the hard limit Kubernetes waits after sending SIGTERM before force-killing the pod. It SHOULD be greater than or equal to `connectionDrainDuration` so that in-flight connections can finish draining before the pod is killed. If unset, it defaults to `connectionDrainDuration + 5s`. https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-termination
-- `type` (String) Type defines the type of gateway deployment created as part of this gateway install object. Possible values are UNIFIED, INGRESS, EGRESS and EASTWEST.
+- `type` (String) Type defines the type of gateway deployment created as part of this gateway install object. Possible values are UNIFIED, INGRESS, EGRESS and EASTWEST. Possible values: UNIFIED, INGRESS, EGRESS, EASTWEST.
 
 ### Read-Only
 

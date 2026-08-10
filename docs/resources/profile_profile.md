@@ -50,7 +50,7 @@ Optional:
 Optional:
 
 - `http` (Attributes) HTTP request authentication is used to configure authentication of origin/end-user credentials like JSON Web Token (JWT). It is highly recommended to set traffic authentication mode to REQUIRED so that it is transported only over mutual TLS (see [below for nested schema](#nestedatt--defaults--authentication_settings--http))
-- `traffic_mode` (String) Traffic authentication mode is used to specify if mTLS or plaintext traffic is accepted
+- `traffic_mode` (String) Traffic authentication mode is used to specify if mTLS or plaintext traffic is accepted. Possible values: UNSET, OPTIONAL, REQUIRED.
 
 <a id="nestedatt--defaults--authentication_settings--http"></a>
 ### Nested Schema for `defaults.authentication_settings.http`
@@ -114,9 +114,9 @@ Required:
 Optional:
 
 - `auth_scopes` (List of String) Optional list of OAuth scopes to be claimed in the authorization request. If not specified, defaults to `user` scope. OAuth RFC https://tools.ietf.org/html/rfc6749#section-3.3
-- `auth_type` (String) Defines how client_id and client_secret are sent in OAuth client to OAuth server requests. RFC https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1
+- `auth_type` (String) Defines how client_id and client_secret are sent in OAuth client to OAuth server requests. RFC https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1. Possible values: DEFAULT_AUTH_TYPE, URL_ENCODED_BODY, BASIC_AUTH.
 - `cookie_config` (Attributes) Configuration applied to the cookies set by the proxy during the OIDC authentication flow. Unlike Envoy, which allows configuring each cookie individually, a single cookie configuration is applied uniformly to every cookie the proxy sets (bearer token, HMAC, expiry, ID token, refresh token, nonce, and code verifier cookies). If not specified, the proxy defaults are used for all cookies. (see [below for nested schema](#nestedatt--defaults--authentication_settings--http--oidc--cookie_config))
-- `grant_type` (String) Configure the [authorization grant type to be used](https://datatracker.ietf.org/doc/html/rfc6749#section-1.3)
+- `grant_type` (String) Configure the [authorization grant type to be used](https://datatracker.ietf.org/doc/html/rfc6749#section-1.3). Possible values: DEFAULT_GRANT_TYPE, AUTHORIZATION_CODE.
 - `redirect_path_matcher` (String) Matching criteria used to determine whether a path appears to be the result of a redirect from the authorization server. The query and fragment string (if present) are removed in the URL path portion. For example, the path `/data` will match URI header `/data#fragment?param=value`. If not provided, default is derived from redirect_uri path Only exact match is configurable
 - `signout_path` (String) The path to sign a user out, clearing their credential cookies. If not provided, default is `/signout` Only exact match is configurable
 - `use_refresh_token` (Attributes) Enable automatic access token refresh using associated refresh token [(see RFC 6749 section 6)](https://datatracker.ietf.org/doc/html/rfc6749#section-6) provided that the OAuth server supports that. If not set defaults to `true`. (see [below for nested schema](#nestedatt--defaults--authentication_settings--http--oidc--use_refresh_token))
@@ -142,7 +142,7 @@ Optional:
 Optional:
 
 - `files` (Attributes) TLS key source from files. (see [below for nested schema](#nestedatt--defaults--authentication_settings--http--oidc--provider--tls--files))
-- `mode` (String) Set this to DISABLED to disable TLS (not recommended from the security perspective), SIMPLE for one-way TLS and MUTUAL for mutual TLS (where client is required to present its certificate as well)
+- `mode` (String) Set this to DISABLED to disable TLS (not recommended from the security perspective), SIMPLE for one-way TLS and MUTUAL for mutual TLS (where client is required to present its certificate as well). Possible values: DISABLED, SIMPLE, MUTUAL, ISTIO_MUTUAL.
 - `secret_name` (String) TLS key source from a Kubernetes Secret. This is applicable for gateway workloads.
 - `subject_alt_names` (List of String) Subject alternative names is the list of names that are accepted as service name as part of TLS handshake
 
@@ -163,7 +163,7 @@ Optional:
 
 Optional:
 
-- `same_site` (String) The value used for the `SameSite` cookie attribute. If not specified, defaults to `DISABLED` (the attribute is not set).
+- `same_site` (String) The value used for the `SameSite` cookie attribute. If not specified, defaults to `DISABLED` (the attribute is not set). Possible values: DISABLED, STRICT, LAX, NONE.
 
 
 <a id="nestedatt--defaults--authentication_settings--http--oidc--use_refresh_token"></a>
@@ -257,7 +257,7 @@ Optional:
 - `automatic_load_balancing` (Attributes) Settings for configuring automatic load balancing between clusters based on observed metrics. (see [below for nested schema](#nestedatt--defaults--traffic--inbound--failover_settings--automatic_load_balancing))
 - `failover_priority` (List of String) FailoverPriority specifies the failover priority for traffic. FailoverPriority is an ordered list of labels  used to sort endpoints to do priority based load balancing.  This is to support traffic failover across different groups of endpoints. Internally these labels will be matched on both the client and endpoints to determine the priorities for the respective endpoints based on clients. Note: For a label to be considered for match, the previous labels must match, i.e.  nth label would be considered matched only if first n-1 labels match. If for a particular client-endpoint pair, all the n labels match, the endpoint will be considered P(0).bool If first n-1 labels match, the endpoint will be considered P(1) and so on. For getting the labels to be populated on the endpoints generated by the TSB for multicluster and eastwest scenario,  you will need to label the kubernetes service of your gateway or east-west exposed service using a label with prefix `failover.tetrate.io/`.  For example `failover.tetrate.io/version=v1` should be the label present on the kubernetes service of remote gateway or exposed service for east west traffic. Example of failoverPriority using these labels: ```yaml failoverPriority: - "failover.tetrate.io/version=v1" - "failover.tetrate.io/domain" ``` Another way to label the endpoints for eastwest scenario is to create a ServiceRoute object for the service and specify the labels in the ServiceRoute object. If there is any pod with such label present in the remote cluster, the endpoints for it will have these labels and thus it could be used in failoverPriority API. For example: Suppose if one of your clusters has service reviews only with version v1 and a second cluster with reviews only with version v2, Then use the below serviceroute object to populate service labels to the endpoints dynamically:  ```yaml apiVersion: traffic.tsb.tetrate.io/v2 kind: ServiceRoute metadata:   name: reviews   group: t1   workspace: w1   tenant: mycompany   organization: myorg spec:   service: ns1/reviews.ns1.svc.cluster.local   subsets:   - name: v1     labels:       version: v1   - name: v2     labels:       version: v2 ``` Example of failoverPriority using these labels: ```yaml failoverPriority: - "version=v1" - "failover.tetrate.io/domain" ```
 - `regional_failover` (Attributes List) Locality routing settings for all gateways in the Workspace/Organization for which this is defined. Explicitly specify the region traffic will land on when endpoints in the local region become unhealthy. Should be used together with OutlierDetection to detect unhealthy endpoints. Note: if no OutlierDetection specified, this will not take effect. (see [below for nested schema](#nestedatt--defaults--traffic--inbound--failover_settings--regional_failover))
-- `topology_choice` (String) TopologyChoice specifies the topology preference for traffic priority. If not specified, the default value is `CLUSTER`. If failoverPriority is specified then this value is ignored.
+- `topology_choice` (String) TopologyChoice specifies the topology preference for traffic priority. If not specified, the default value is `CLUSTER`. If failoverPriority is specified then this value is ignored. Possible values: NONE, CLUSTER, LOCALITY.
 
 <a id="nestedatt--defaults--traffic--inbound--failover_settings--automatic_load_balancing"></a>
 ### Nested Schema for `defaults.traffic.inbound.failover_settings.automatic_load_balancing`
@@ -388,7 +388,7 @@ Optional:
 Optional:
 
 - `files` (Attributes) TLS key source from files. (see [below for nested schema](#nestedatt--defaults--traffic--inbound--rate_limiting--external_service--tls--files))
-- `mode` (String) Set this to DISABLED to disable TLS (not recommended from the security perspective), SIMPLE for one-way TLS and MUTUAL for mutual TLS (where client is required to present its certificate as well)
+- `mode` (String) Set this to DISABLED to disable TLS (not recommended from the security perspective), SIMPLE for one-way TLS and MUTUAL for mutual TLS (where client is required to present its certificate as well). Possible values: DISABLED, SIMPLE, MUTUAL.
 - `secret_name` (String) TLS key source from a Kubernetes Secret. This is applicable for gateway workloads.
 - `subject_alt_names` (List of String) Subject alternative names is the list of names that are accepted as service name as part of TLS handshake
 
@@ -601,7 +601,7 @@ Required:
 Required:
 
 - `requests_per_unit` (Number) Specifies the value of the rate limit.
-- `unit` (String) Specifies the unit of time for rate limit.
+- `unit` (String) Specifies the unit of time for rate limit. Possible values: UNKNOWN, SECOND, MINUTE, HOUR, DAY.
 
 
 
@@ -682,7 +682,7 @@ Optional:
 - `max_connection_duration` (Attributes) This specifies the duration of time after which a downstream and upstream connection will be drained and/or closed, starting from when it was first established. If there are no active streams, the connection will be closed. If there are any active streams, the drain sequence will kick-in, and the connection will be force-closed after the drain period. The default value of max connection duration is 0 or unlimited, which means that the connections will never be closed due to aging. This setting applies to the entire HTTP connection and all streams (HTTP/2 and HTTP/3) the connection carries. (see [below for nested schema](#nestedatt--defaults--traffic--inbound--resilience--mesh_timeout--max_connection_duration))
 - `max_downstream_connection_duration` (Attributes) The maximum duration of a TCP connection. The duration is defined as the period since a connection was established. If not set, there is no max duration. When max_downstream_connection_duration is reached the connection will be closed. This can be used alongside with `max_connection_duration`. (see [below for nested schema](#nestedatt--defaults--traffic--inbound--resilience--mesh_timeout--max_downstream_connection_duration))
 - `max_stream_duration` (Attributes) The max stream duration is the maximum time that a stream’s lifetime will span. (see [below for nested schema](#nestedatt--defaults--traffic--inbound--resilience--mesh_timeout--max_stream_duration))
-- `proxy_type` (String) Specifies the type of proxy to which to apply the mesh timeout settings. The default is to apply the settings to both Gateways and Sidecars.
+- `proxy_type` (String) Specifies the type of proxy to which to apply the mesh timeout settings. The default is to apply the settings to both Gateways and Sidecars. Possible values: ANY, SIDECAR, GATEWAY.
 
 <a id="nestedatt--defaults--traffic--inbound--resilience--mesh_timeout--max_connection_duration"></a>
 ### Nested Schema for `defaults.traffic.inbound.resilience.mesh_timeout.max_connection_duration`
@@ -737,7 +737,7 @@ Required:
 Optional:
 
 - `hosts` (List of String) When the mode is `CUSTOM`, `hosts` specify the set of services that the sidecar should be able to reach. Must be in the `<namespace>/<fqdn>` format. - `./*` indicates all services in the namespace where the sidecar resides. - `ns1/*` indicates all services in the `ns1` namespace. - `ns1/svc1.com` indicates `svc1.com` service in `ns1` namespace. - `*/svc1.com` indicates `svc1.com` service in any namespace.
-- `mode` (String) A short cut for specifying the set of services accessed by the workload.
+- `mode` (String) A short cut for specifying the set of services accessed by the workload. Possible values: UNSET, NAMESPACE, GROUP, WORKSPACE, CLUSTER, CUSTOM.
 
 
 <a id="nestedatt--defaults--traffic--outbound--upstream_traffic_settings"></a>
@@ -762,7 +762,7 @@ Optional:
 
 Optional:
 
-- `traffic_mode` (String) If set to `REQUIRED`, client sidecars under this configuration will be configured to initiate mTLS connections using mesh-generated client certificates to services that do not have a sidecar injected.
+- `traffic_mode` (String) If set to `REQUIRED`, client sidecars under this configuration will be configured to initiate mTLS connections using mesh-generated client certificates to services that do not have a sidecar injected. Possible values: UNSET, OPTIONAL, REQUIRED.
 
 
 <a id="nestedatt--defaults--traffic--outbound--upstream_traffic_settings--settings--load_balancer"></a>
@@ -771,7 +771,7 @@ Optional:
 Optional:
 
 - `consistent_hash` (Attributes) Use consistent hash load balancing which can provide soft session affinity. (see [below for nested schema](#nestedatt--defaults--traffic--outbound--upstream_traffic_settings--settings--load_balancer--consistent_hash))
-- `simple` (String) Use standard load balancing algorithms that require no tuning.
+- `simple` (String) Use standard load balancing algorithms that require no tuning. Possible values: UNSPECIFIED, RANDOM, PASSTHROUGH, ROUND_ROBIN, LEAST_REQUEST.
 
 <a id="nestedatt--defaults--traffic--outbound--upstream_traffic_settings--settings--load_balancer--consistent_hash"></a>
 ### Nested Schema for `defaults.traffic.outbound.upstream_traffic_settings.settings.load_balancer.consistent_hash`
@@ -830,7 +830,7 @@ Optional:
 
 Optional:
 
-- `circuit_breaker_sensitivity` (String) Circuit breakers in Envoy are applied per endpoint in a load balancing pool. By default, circuit breakers are disabled. If set, the sensitivity level determines the maximum number of consecutive failures that Envoy will tolerate before ejecting an endpoint from the load balancing pool.
+- `circuit_breaker_sensitivity` (String) Circuit breakers in Envoy are applied per endpoint in a load balancing pool. By default, circuit breakers are disabled. If set, the sensitivity level determines the maximum number of consecutive failures that Envoy will tolerate before ejecting an endpoint from the load balancing pool. Possible values: UNSET, LOW, MEDIUM, HIGH, CUSTOM.
 - `connection_pool` (Attributes) Configures tolerance and other settings for TCP/HTTP connections to the service. (see [below for nested schema](#nestedatt--defaults--traffic--outbound--upstream_traffic_settings--settings--resilience--connection_pool))
 - `outlier_detection` (Attributes) Outlier detection settings for the upstream host when custom mode is used. (see [below for nested schema](#nestedatt--defaults--traffic--outbound--upstream_traffic_settings--settings--resilience--outlier_detection))
 
@@ -1129,7 +1129,7 @@ Optional:
 - `automatic_load_balancing` (Attributes) Settings for configuring automatic load balancing between clusters based on observed metrics. (see [below for nested schema](#nestedatt--defaults--traffic_settings--inbound--failover_settings--automatic_load_balancing))
 - `failover_priority` (List of String) FailoverPriority specifies the failover priority for traffic. FailoverPriority is an ordered list of labels  used to sort endpoints to do priority based load balancing.  This is to support traffic failover across different groups of endpoints. Internally these labels will be matched on both the client and endpoints to determine the priorities for the respective endpoints based on clients. Note: For a label to be considered for match, the previous labels must match, i.e.  nth label would be considered matched only if first n-1 labels match. If for a particular client-endpoint pair, all the n labels match, the endpoint will be considered P(0).bool If first n-1 labels match, the endpoint will be considered P(1) and so on. For getting the labels to be populated on the endpoints generated by the TSB for multicluster and eastwest scenario,  you will need to label the kubernetes service of your gateway or east-west exposed service using a label with prefix `failover.tetrate.io/`.  For example `failover.tetrate.io/version=v1` should be the label present on the kubernetes service of remote gateway or exposed service for east west traffic. Example of failoverPriority using these labels: ```yaml failoverPriority: - "failover.tetrate.io/version=v1" - "failover.tetrate.io/domain" ``` Another way to label the endpoints for eastwest scenario is to create a ServiceRoute object for the service and specify the labels in the ServiceRoute object. If there is any pod with such label present in the remote cluster, the endpoints for it will have these labels and thus it could be used in failoverPriority API. For example: Suppose if one of your clusters has service reviews only with version v1 and a second cluster with reviews only with version v2, Then use the below serviceroute object to populate service labels to the endpoints dynamically:  ```yaml apiVersion: traffic.tsb.tetrate.io/v2 kind: ServiceRoute metadata:   name: reviews   group: t1   workspace: w1   tenant: mycompany   organization: myorg spec:   service: ns1/reviews.ns1.svc.cluster.local   subsets:   - name: v1     labels:       version: v1   - name: v2     labels:       version: v2 ``` Example of failoverPriority using these labels: ```yaml failoverPriority: - "version=v1" - "failover.tetrate.io/domain" ```
 - `regional_failover` (Attributes List) Locality routing settings for all gateways in the Workspace/Organization for which this is defined. Explicitly specify the region traffic will land on when endpoints in the local region become unhealthy. Should be used together with OutlierDetection to detect unhealthy endpoints. Note: if no OutlierDetection specified, this will not take effect. (see [below for nested schema](#nestedatt--defaults--traffic_settings--inbound--failover_settings--regional_failover))
-- `topology_choice` (String) TopologyChoice specifies the topology preference for traffic priority. If not specified, the default value is `CLUSTER`. If failoverPriority is specified then this value is ignored.
+- `topology_choice` (String) TopologyChoice specifies the topology preference for traffic priority. If not specified, the default value is `CLUSTER`. If failoverPriority is specified then this value is ignored. Possible values: NONE, CLUSTER, LOCALITY.
 
 <a id="nestedatt--defaults--traffic_settings--inbound--failover_settings--automatic_load_balancing"></a>
 ### Nested Schema for `defaults.traffic_settings.inbound.failover_settings.automatic_load_balancing`
@@ -1260,7 +1260,7 @@ Optional:
 Optional:
 
 - `files` (Attributes) TLS key source from files. (see [below for nested schema](#nestedatt--defaults--traffic_settings--inbound--rate_limiting--external_service--tls--files))
-- `mode` (String) Set this to DISABLED to disable TLS (not recommended from the security perspective), SIMPLE for one-way TLS and MUTUAL for mutual TLS (where client is required to present its certificate as well)
+- `mode` (String) Set this to DISABLED to disable TLS (not recommended from the security perspective), SIMPLE for one-way TLS and MUTUAL for mutual TLS (where client is required to present its certificate as well). Possible values: DISABLED, SIMPLE, MUTUAL, ISTIO_MUTUAL.
 - `secret_name` (String) TLS key source from a Kubernetes Secret. This is applicable for gateway workloads.
 - `subject_alt_names` (List of String) Subject alternative names is the list of names that are accepted as service name as part of TLS handshake
 
@@ -1473,7 +1473,7 @@ Required:
 Required:
 
 - `requests_per_unit` (Number) Specifies the value of the rate limit.
-- `unit` (String) Specifies the unit of time for rate limit.
+- `unit` (String) Specifies the unit of time for rate limit. Possible values: UNKNOWN, SECOND, MINUTE, HOUR, DAY.
 
 
 
@@ -1554,7 +1554,7 @@ Optional:
 - `max_connection_duration` (Attributes) This specifies the duration of time after which a downstream and upstream connection will be drained and/or closed, starting from when it was first established. If there are no active streams, the connection will be closed. If there are any active streams, the drain sequence will kick-in, and the connection will be force-closed after the drain period. The default value of max connection duration is 0 or unlimited, which means that the connections will never be closed due to aging. This setting applies to the entire HTTP connection and all streams (HTTP/2 and HTTP/3) the connection carries. (see [below for nested schema](#nestedatt--defaults--traffic_settings--inbound--resilience--mesh_timeout--max_connection_duration))
 - `max_downstream_connection_duration` (Attributes) The maximum duration of a TCP connection. The duration is defined as the period since a connection was established. If not set, there is no max duration. When max_downstream_connection_duration is reached the connection will be closed. This can be used alongside with `max_connection_duration`. (see [below for nested schema](#nestedatt--defaults--traffic_settings--inbound--resilience--mesh_timeout--max_downstream_connection_duration))
 - `max_stream_duration` (Attributes) The max stream duration is the maximum time that a stream’s lifetime will span. (see [below for nested schema](#nestedatt--defaults--traffic_settings--inbound--resilience--mesh_timeout--max_stream_duration))
-- `proxy_type` (String) Specifies the type of proxy to which to apply the mesh timeout settings. The default is to apply the settings to both Gateways and Sidecars.
+- `proxy_type` (String) Specifies the type of proxy to which to apply the mesh timeout settings. The default is to apply the settings to both Gateways and Sidecars. Possible values: ANY, SIDECAR, GATEWAY.
 
 <a id="nestedatt--defaults--traffic_settings--inbound--resilience--mesh_timeout--max_connection_duration"></a>
 ### Nested Schema for `defaults.traffic_settings.inbound.resilience.mesh_timeout.max_connection_duration`
@@ -1609,7 +1609,7 @@ Required:
 Optional:
 
 - `hosts` (List of String) When the mode is `CUSTOM`, `hosts` specify the set of services that the sidecar should be able to reach. Must be in the `<namespace>/<fqdn>` format. - `./*` indicates all services in the namespace where the sidecar resides. - `ns1/*` indicates all services in the `ns1` namespace. - `ns1/svc1.com` indicates `svc1.com` service in `ns1` namespace. - `*/svc1.com` indicates `svc1.com` service in any namespace.
-- `mode` (String) A short cut for specifying the set of services accessed by the workload.
+- `mode` (String) A short cut for specifying the set of services accessed by the workload. Possible values: UNSET, NAMESPACE, GROUP, WORKSPACE, CLUSTER, CUSTOM.
 
 
 <a id="nestedatt--defaults--traffic_settings--outbound--upstream_traffic_settings"></a>
@@ -1634,7 +1634,7 @@ Optional:
 
 Optional:
 
-- `traffic_mode` (String) If set to `REQUIRED`, client sidecars under this configuration will be configured to initiate mTLS connections using mesh-generated client certificates to services that do not have a sidecar injected.
+- `traffic_mode` (String) If set to `REQUIRED`, client sidecars under this configuration will be configured to initiate mTLS connections using mesh-generated client certificates to services that do not have a sidecar injected. Possible values: UNSET, OPTIONAL, REQUIRED.
 
 
 <a id="nestedatt--defaults--traffic_settings--outbound--upstream_traffic_settings--settings--load_balancer"></a>
@@ -1643,7 +1643,7 @@ Optional:
 Optional:
 
 - `consistent_hash` (Attributes) Use consistent hash load balancing which can provide soft session affinity. (see [below for nested schema](#nestedatt--defaults--traffic_settings--outbound--upstream_traffic_settings--settings--load_balancer--consistent_hash))
-- `simple` (String) Use standard load balancing algorithms that require no tuning.
+- `simple` (String) Use standard load balancing algorithms that require no tuning. Possible values: UNSPECIFIED, RANDOM, PASSTHROUGH, ROUND_ROBIN, LEAST_REQUEST.
 
 <a id="nestedatt--defaults--traffic_settings--outbound--upstream_traffic_settings--settings--load_balancer--consistent_hash"></a>
 ### Nested Schema for `defaults.traffic_settings.outbound.upstream_traffic_settings.settings.load_balancer.consistent_hash`
@@ -1702,7 +1702,7 @@ Optional:
 
 Optional:
 
-- `circuit_breaker_sensitivity` (String) Circuit breakers in Envoy are applied per endpoint in a load balancing pool. By default, circuit breakers are disabled. If set, the sensitivity level determines the maximum number of consecutive failures that Envoy will tolerate before ejecting an endpoint from the load balancing pool.
+- `circuit_breaker_sensitivity` (String) Circuit breakers in Envoy are applied per endpoint in a load balancing pool. By default, circuit breakers are disabled. If set, the sensitivity level determines the maximum number of consecutive failures that Envoy will tolerate before ejecting an endpoint from the load balancing pool. Possible values: UNSET, LOW, MEDIUM, HIGH, CUSTOM.
 - `connection_pool` (Attributes) Configures tolerance and other settings for TCP/HTTP connections to the service. (see [below for nested schema](#nestedatt--defaults--traffic_settings--outbound--upstream_traffic_settings--settings--resilience--connection_pool))
 - `outlier_detection` (Attributes) Outlier detection settings for the upstream host when custom mode is used. (see [below for nested schema](#nestedatt--defaults--traffic_settings--outbound--upstream_traffic_settings--settings--resilience--outlier_detection))
 
@@ -2049,7 +2049,7 @@ Optional:
 Optional:
 
 - `files` (Attributes) TLS key source from files. (see [below for nested schema](#nestedatt--defaults--traffic_settings--rate_limiting--external_service--tls--files))
-- `mode` (String) Set this to DISABLED to disable TLS (not recommended from the security perspective), SIMPLE for one-way TLS and MUTUAL for mutual TLS (where client is required to present its certificate as well)
+- `mode` (String) Set this to DISABLED to disable TLS (not recommended from the security perspective), SIMPLE for one-way TLS and MUTUAL for mutual TLS (where client is required to present its certificate as well). Possible values: DISABLED, SIMPLE, MUTUAL, ISTIO_MUTUAL.
 - `secret_name` (String) TLS key source from a Kubernetes Secret. This is applicable for gateway workloads.
 - `subject_alt_names` (List of String) Subject alternative names is the list of names that are accepted as service name as part of TLS handshake
 
@@ -2262,7 +2262,7 @@ Required:
 Required:
 
 - `requests_per_unit` (Number) Specifies the value of the rate limit.
-- `unit` (String) Specifies the unit of time for rate limit.
+- `unit` (String) Specifies the unit of time for rate limit. Possible values: UNKNOWN, SECOND, MINUTE, HOUR, DAY.
 
 
 
@@ -2283,7 +2283,7 @@ Optional:
 Optional:
 
 - `hosts` (List of String) When the mode is `CUSTOM`, `hosts` specify the set of services that the sidecar should be able to reach. Must be in the `<namespace>/<fqdn>` format. - `./*` indicates all services in the namespace where the sidecar resides. - `ns1/*` indicates all services in the `ns1` namespace. - `ns1/svc1.com` indicates `svc1.com` service in `ns1` namespace. - `*/svc1.com` indicates `svc1.com` service in any namespace.
-- `mode` (String) A short cut for specifying the set of services accessed by the workload.
+- `mode` (String) A short cut for specifying the set of services accessed by the workload. Possible values: UNSET, NAMESPACE, GROUP, WORKSPACE, CLUSTER, CUSTOM.
 
 
 <a id="nestedatt--defaults--traffic_settings--resilience"></a>
@@ -2291,7 +2291,7 @@ Optional:
 
 Optional:
 
-- `circuit_breaker_sensitivity` (String) This field is DEPRECATED in favor of `upstreamTrafficSettings.resilience.circuitBreakerSensitivity`. Circuit breakers in Envoy are applied per endpoint in a load balancing pool. By default, circuit breakers are disabled. If set, the sensitivity level determines the maximum number of consecutive failures that Envoy will tolerate before ejecting an endpoint from the load balancing pool.
+- `circuit_breaker_sensitivity` (String) This field is DEPRECATED in favor of `upstreamTrafficSettings.resilience.circuitBreakerSensitivity`. Circuit breakers in Envoy are applied per endpoint in a load balancing pool. By default, circuit breakers are disabled. If set, the sensitivity level determines the maximum number of consecutive failures that Envoy will tolerate before ejecting an endpoint from the load balancing pool. Possible values: UNSET, LOW, MEDIUM, HIGH.
 - `http_request_timeout` (Attributes) This field is DEPRECATED in favor of `upstreamTrafficSettings.resilience.connectionPool.http.requestTimeout`. Timeout for HTTP requests. Disabled if not set. (see [below for nested schema](#nestedatt--defaults--traffic_settings--resilience--http_request_timeout))
 - `http_retries` (Attributes) This field is DEPRECATED in favor of `upstreamTrafficSettings.resilience.connectionPool.http.retries`. Retry policy for HTTP requests. Disabled if not set. (see [below for nested schema](#nestedatt--defaults--traffic_settings--resilience--http_retries))
 - `keep_alive` (Attributes) Keep Alive Settings. (see [below for nested schema](#nestedatt--defaults--traffic_settings--resilience--keep_alive))
@@ -2466,7 +2466,7 @@ Optional:
 
 Optional:
 
-- `traffic_mode` (String) If set to `REQUIRED`, client sidecars under this configuration will be configured to initiate mTLS connections using mesh-generated client certificates to services that do not have a sidecar injected.
+- `traffic_mode` (String) If set to `REQUIRED`, client sidecars under this configuration will be configured to initiate mTLS connections using mesh-generated client certificates to services that do not have a sidecar injected. Possible values: UNSET, OPTIONAL, REQUIRED.
 
 
 <a id="nestedatt--defaults--traffic_settings--upstream_traffic_settings--settings--load_balancer"></a>
@@ -2475,7 +2475,7 @@ Optional:
 Optional:
 
 - `consistent_hash` (Attributes) Use consistent hash load balancing which can provide soft session affinity. (see [below for nested schema](#nestedatt--defaults--traffic_settings--upstream_traffic_settings--settings--load_balancer--consistent_hash))
-- `simple` (String) Use standard load balancing algorithms that require no tuning.
+- `simple` (String) Use standard load balancing algorithms that require no tuning. Possible values: UNSPECIFIED, RANDOM, PASSTHROUGH, ROUND_ROBIN, LEAST_REQUEST.
 
 <a id="nestedatt--defaults--traffic_settings--upstream_traffic_settings--settings--load_balancer--consistent_hash"></a>
 ### Nested Schema for `defaults.traffic_settings.upstream_traffic_settings.settings.load_balancer.consistent_hash`
@@ -2534,7 +2534,7 @@ Optional:
 
 Optional:
 
-- `circuit_breaker_sensitivity` (String) Circuit breakers in Envoy are applied per endpoint in a load balancing pool. By default, circuit breakers are disabled. If set, the sensitivity level determines the maximum number of consecutive failures that Envoy will tolerate before ejecting an endpoint from the load balancing pool.
+- `circuit_breaker_sensitivity` (String) Circuit breakers in Envoy are applied per endpoint in a load balancing pool. By default, circuit breakers are disabled. If set, the sensitivity level determines the maximum number of consecutive failures that Envoy will tolerate before ejecting an endpoint from the load balancing pool. Possible values: UNSET, LOW, MEDIUM, HIGH, CUSTOM.
 - `connection_pool` (Attributes) Configures tolerance and other settings for TCP/HTTP connections to the service. (see [below for nested schema](#nestedatt--defaults--traffic_settings--upstream_traffic_settings--settings--resilience--connection_pool))
 - `outlier_detection` (Attributes) Outlier detection settings for the upstream host when custom mode is used. (see [below for nested schema](#nestedatt--defaults--traffic_settings--upstream_traffic_settings--settings--resilience--outlier_detection))
 
@@ -2799,7 +2799,7 @@ Optional:
 
 Optional:
 
-- `mode` (String) Criteria for selecting traffic by their direction. Note that CLIENT and SERVER are analogous to OUTBOUND and INBOUND, respectively. For the gateway, the field should be CLIENT or CLIENT_AND_SERVER. If not specified, the default value is CLIENT_AND_SERVER.
+- `mode` (String) Criteria for selecting traffic by their direction. Note that CLIENT and SERVER are analogous to OUTBOUND and INBOUND, respectively. For the gateway, the field should be CLIENT or CLIENT_AND_SERVER. If not specified, the default value is CLIENT_AND_SERVER. Possible values: UNDEFINED, CLIENT, SERVER, CLIENT_AND_SERVER.
 - `ports` (Attributes List) Criteria for selecting traffic by their destination port. More specifically, for the outbound traffic, the destination port would be the port of the target service. On the other hand, for the inbound traffic, the destination port is the port bound by the server process in the same Pod. If one of the given `ports` is matched, this condition is evaluated to true. If not specified, this condition is evaluated to true for any port. (see [below for nested schema](#nestedatt--defaults--wasm_extensions--match--ports))
 
 <a id="nestedatt--defaults--wasm_extensions--match--ports"></a>
@@ -2831,7 +2831,7 @@ Optional:
 Optional:
 
 - `http` (Attributes) HTTP request authentication is used to configure authentication of origin/end-user credentials like JSON Web Token (JWT). It is highly recommended to set traffic authentication mode to REQUIRED so that it is transported only over mutual TLS (see [below for nested schema](#nestedatt--mandates--authentication_settings--http))
-- `traffic_mode` (String) Traffic authentication mode is used to specify if mTLS or plaintext traffic is accepted
+- `traffic_mode` (String) Traffic authentication mode is used to specify if mTLS or plaintext traffic is accepted. Possible values: UNSET, OPTIONAL, REQUIRED.
 
 <a id="nestedatt--mandates--authentication_settings--http"></a>
 ### Nested Schema for `mandates.authentication_settings.http`
@@ -2895,9 +2895,9 @@ Required:
 Optional:
 
 - `auth_scopes` (List of String) Optional list of OAuth scopes to be claimed in the authorization request. If not specified, defaults to `user` scope. OAuth RFC https://tools.ietf.org/html/rfc6749#section-3.3
-- `auth_type` (String) Defines how client_id and client_secret are sent in OAuth client to OAuth server requests. RFC https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1
+- `auth_type` (String) Defines how client_id and client_secret are sent in OAuth client to OAuth server requests. RFC https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1. Possible values: DEFAULT_AUTH_TYPE, URL_ENCODED_BODY, BASIC_AUTH.
 - `cookie_config` (Attributes) Configuration applied to the cookies set by the proxy during the OIDC authentication flow. Unlike Envoy, which allows configuring each cookie individually, a single cookie configuration is applied uniformly to every cookie the proxy sets (bearer token, HMAC, expiry, ID token, refresh token, nonce, and code verifier cookies). If not specified, the proxy defaults are used for all cookies. (see [below for nested schema](#nestedatt--mandates--authentication_settings--http--oidc--cookie_config))
-- `grant_type` (String) Configure the [authorization grant type to be used](https://datatracker.ietf.org/doc/html/rfc6749#section-1.3)
+- `grant_type` (String) Configure the [authorization grant type to be used](https://datatracker.ietf.org/doc/html/rfc6749#section-1.3). Possible values: DEFAULT_GRANT_TYPE, AUTHORIZATION_CODE.
 - `redirect_path_matcher` (String) Matching criteria used to determine whether a path appears to be the result of a redirect from the authorization server. The query and fragment string (if present) are removed in the URL path portion. For example, the path `/data` will match URI header `/data#fragment?param=value`. If not provided, default is derived from redirect_uri path Only exact match is configurable
 - `signout_path` (String) The path to sign a user out, clearing their credential cookies. If not provided, default is `/signout` Only exact match is configurable
 - `use_refresh_token` (Attributes) Enable automatic access token refresh using associated refresh token [(see RFC 6749 section 6)](https://datatracker.ietf.org/doc/html/rfc6749#section-6) provided that the OAuth server supports that. If not set defaults to `true`. (see [below for nested schema](#nestedatt--mandates--authentication_settings--http--oidc--use_refresh_token))
@@ -2923,7 +2923,7 @@ Optional:
 Optional:
 
 - `files` (Attributes) TLS key source from files. (see [below for nested schema](#nestedatt--mandates--authentication_settings--http--oidc--provider--tls--files))
-- `mode` (String) Set this to DISABLED to disable TLS (not recommended from the security perspective), SIMPLE for one-way TLS and MUTUAL for mutual TLS (where client is required to present its certificate as well)
+- `mode` (String) Set this to DISABLED to disable TLS (not recommended from the security perspective), SIMPLE for one-way TLS and MUTUAL for mutual TLS (where client is required to present its certificate as well). Possible values: DISABLED, SIMPLE, MUTUAL, ISTIO_MUTUAL.
 - `secret_name` (String) TLS key source from a Kubernetes Secret. This is applicable for gateway workloads.
 - `subject_alt_names` (List of String) Subject alternative names is the list of names that are accepted as service name as part of TLS handshake
 
@@ -2944,7 +2944,7 @@ Optional:
 
 Optional:
 
-- `same_site` (String) The value used for the `SameSite` cookie attribute. If not specified, defaults to `DISABLED` (the attribute is not set).
+- `same_site` (String) The value used for the `SameSite` cookie attribute. If not specified, defaults to `DISABLED` (the attribute is not set). Possible values: DISABLED, STRICT, LAX, NONE.
 
 
 <a id="nestedatt--mandates--authentication_settings--http--oidc--use_refresh_token"></a>
@@ -3038,7 +3038,7 @@ Optional:
 - `automatic_load_balancing` (Attributes) Settings for configuring automatic load balancing between clusters based on observed metrics. (see [below for nested schema](#nestedatt--mandates--traffic--inbound--failover_settings--automatic_load_balancing))
 - `failover_priority` (List of String) FailoverPriority specifies the failover priority for traffic. FailoverPriority is an ordered list of labels  used to sort endpoints to do priority based load balancing.  This is to support traffic failover across different groups of endpoints. Internally these labels will be matched on both the client and endpoints to determine the priorities for the respective endpoints based on clients. Note: For a label to be considered for match, the previous labels must match, i.e.  nth label would be considered matched only if first n-1 labels match. If for a particular client-endpoint pair, all the n labels match, the endpoint will be considered P(0).bool If first n-1 labels match, the endpoint will be considered P(1) and so on. For getting the labels to be populated on the endpoints generated by the TSB for multicluster and eastwest scenario,  you will need to label the kubernetes service of your gateway or east-west exposed service using a label with prefix `failover.tetrate.io/`.  For example `failover.tetrate.io/version=v1` should be the label present on the kubernetes service of remote gateway or exposed service for east west traffic. Example of failoverPriority using these labels: ```yaml failoverPriority: - "failover.tetrate.io/version=v1" - "failover.tetrate.io/domain" ``` Another way to label the endpoints for eastwest scenario is to create a ServiceRoute object for the service and specify the labels in the ServiceRoute object. If there is any pod with such label present in the remote cluster, the endpoints for it will have these labels and thus it could be used in failoverPriority API. For example: Suppose if one of your clusters has service reviews only with version v1 and a second cluster with reviews only with version v2, Then use the below serviceroute object to populate service labels to the endpoints dynamically:  ```yaml apiVersion: traffic.tsb.tetrate.io/v2 kind: ServiceRoute metadata:   name: reviews   group: t1   workspace: w1   tenant: mycompany   organization: myorg spec:   service: ns1/reviews.ns1.svc.cluster.local   subsets:   - name: v1     labels:       version: v1   - name: v2     labels:       version: v2 ``` Example of failoverPriority using these labels: ```yaml failoverPriority: - "version=v1" - "failover.tetrate.io/domain" ```
 - `regional_failover` (Attributes List) Locality routing settings for all gateways in the Workspace/Organization for which this is defined. Explicitly specify the region traffic will land on when endpoints in the local region become unhealthy. Should be used together with OutlierDetection to detect unhealthy endpoints. Note: if no OutlierDetection specified, this will not take effect. (see [below for nested schema](#nestedatt--mandates--traffic--inbound--failover_settings--regional_failover))
-- `topology_choice` (String) TopologyChoice specifies the topology preference for traffic priority. If not specified, the default value is `CLUSTER`. If failoverPriority is specified then this value is ignored.
+- `topology_choice` (String) TopologyChoice specifies the topology preference for traffic priority. If not specified, the default value is `CLUSTER`. If failoverPriority is specified then this value is ignored. Possible values: NONE, CLUSTER, LOCALITY.
 
 <a id="nestedatt--mandates--traffic--inbound--failover_settings--automatic_load_balancing"></a>
 ### Nested Schema for `mandates.traffic.inbound.failover_settings.automatic_load_balancing`
@@ -3169,7 +3169,7 @@ Optional:
 Optional:
 
 - `files` (Attributes) TLS key source from files. (see [below for nested schema](#nestedatt--mandates--traffic--inbound--rate_limiting--external_service--tls--files))
-- `mode` (String) Set this to DISABLED to disable TLS (not recommended from the security perspective), SIMPLE for one-way TLS and MUTUAL for mutual TLS (where client is required to present its certificate as well)
+- `mode` (String) Set this to DISABLED to disable TLS (not recommended from the security perspective), SIMPLE for one-way TLS and MUTUAL for mutual TLS (where client is required to present its certificate as well). Possible values: DISABLED, SIMPLE, MUTUAL.
 - `secret_name` (String) TLS key source from a Kubernetes Secret. This is applicable for gateway workloads.
 - `subject_alt_names` (List of String) Subject alternative names is the list of names that are accepted as service name as part of TLS handshake
 
@@ -3382,7 +3382,7 @@ Required:
 Required:
 
 - `requests_per_unit` (Number) Specifies the value of the rate limit.
-- `unit` (String) Specifies the unit of time for rate limit.
+- `unit` (String) Specifies the unit of time for rate limit. Possible values: UNKNOWN, SECOND, MINUTE, HOUR, DAY.
 
 
 
@@ -3463,7 +3463,7 @@ Optional:
 - `max_connection_duration` (Attributes) This specifies the duration of time after which a downstream and upstream connection will be drained and/or closed, starting from when it was first established. If there are no active streams, the connection will be closed. If there are any active streams, the drain sequence will kick-in, and the connection will be force-closed after the drain period. The default value of max connection duration is 0 or unlimited, which means that the connections will never be closed due to aging. This setting applies to the entire HTTP connection and all streams (HTTP/2 and HTTP/3) the connection carries. (see [below for nested schema](#nestedatt--mandates--traffic--inbound--resilience--mesh_timeout--max_connection_duration))
 - `max_downstream_connection_duration` (Attributes) The maximum duration of a TCP connection. The duration is defined as the period since a connection was established. If not set, there is no max duration. When max_downstream_connection_duration is reached the connection will be closed. This can be used alongside with `max_connection_duration`. (see [below for nested schema](#nestedatt--mandates--traffic--inbound--resilience--mesh_timeout--max_downstream_connection_duration))
 - `max_stream_duration` (Attributes) The max stream duration is the maximum time that a stream’s lifetime will span. (see [below for nested schema](#nestedatt--mandates--traffic--inbound--resilience--mesh_timeout--max_stream_duration))
-- `proxy_type` (String) Specifies the type of proxy to which to apply the mesh timeout settings. The default is to apply the settings to both Gateways and Sidecars.
+- `proxy_type` (String) Specifies the type of proxy to which to apply the mesh timeout settings. The default is to apply the settings to both Gateways and Sidecars. Possible values: ANY, SIDECAR, GATEWAY.
 
 <a id="nestedatt--mandates--traffic--inbound--resilience--mesh_timeout--max_connection_duration"></a>
 ### Nested Schema for `mandates.traffic.inbound.resilience.mesh_timeout.max_connection_duration`
@@ -3518,7 +3518,7 @@ Required:
 Optional:
 
 - `hosts` (List of String) When the mode is `CUSTOM`, `hosts` specify the set of services that the sidecar should be able to reach. Must be in the `<namespace>/<fqdn>` format. - `./*` indicates all services in the namespace where the sidecar resides. - `ns1/*` indicates all services in the `ns1` namespace. - `ns1/svc1.com` indicates `svc1.com` service in `ns1` namespace. - `*/svc1.com` indicates `svc1.com` service in any namespace.
-- `mode` (String) A short cut for specifying the set of services accessed by the workload.
+- `mode` (String) A short cut for specifying the set of services accessed by the workload. Possible values: UNSET, NAMESPACE, GROUP, WORKSPACE, CLUSTER, CUSTOM.
 
 
 <a id="nestedatt--mandates--traffic--outbound--upstream_traffic_settings"></a>
@@ -3543,7 +3543,7 @@ Optional:
 
 Optional:
 
-- `traffic_mode` (String) If set to `REQUIRED`, client sidecars under this configuration will be configured to initiate mTLS connections using mesh-generated client certificates to services that do not have a sidecar injected.
+- `traffic_mode` (String) If set to `REQUIRED`, client sidecars under this configuration will be configured to initiate mTLS connections using mesh-generated client certificates to services that do not have a sidecar injected. Possible values: UNSET, OPTIONAL, REQUIRED.
 
 
 <a id="nestedatt--mandates--traffic--outbound--upstream_traffic_settings--settings--load_balancer"></a>
@@ -3552,7 +3552,7 @@ Optional:
 Optional:
 
 - `consistent_hash` (Attributes) Use consistent hash load balancing which can provide soft session affinity. (see [below for nested schema](#nestedatt--mandates--traffic--outbound--upstream_traffic_settings--settings--load_balancer--consistent_hash))
-- `simple` (String) Use standard load balancing algorithms that require no tuning.
+- `simple` (String) Use standard load balancing algorithms that require no tuning. Possible values: UNSPECIFIED, RANDOM, PASSTHROUGH, ROUND_ROBIN, LEAST_REQUEST.
 
 <a id="nestedatt--mandates--traffic--outbound--upstream_traffic_settings--settings--load_balancer--consistent_hash"></a>
 ### Nested Schema for `mandates.traffic.outbound.upstream_traffic_settings.settings.load_balancer.consistent_hash`
@@ -3611,7 +3611,7 @@ Optional:
 
 Optional:
 
-- `circuit_breaker_sensitivity` (String) Circuit breakers in Envoy are applied per endpoint in a load balancing pool. By default, circuit breakers are disabled. If set, the sensitivity level determines the maximum number of consecutive failures that Envoy will tolerate before ejecting an endpoint from the load balancing pool.
+- `circuit_breaker_sensitivity` (String) Circuit breakers in Envoy are applied per endpoint in a load balancing pool. By default, circuit breakers are disabled. If set, the sensitivity level determines the maximum number of consecutive failures that Envoy will tolerate before ejecting an endpoint from the load balancing pool. Possible values: UNSET, LOW, MEDIUM, HIGH, CUSTOM.
 - `connection_pool` (Attributes) Configures tolerance and other settings for TCP/HTTP connections to the service. (see [below for nested schema](#nestedatt--mandates--traffic--outbound--upstream_traffic_settings--settings--resilience--connection_pool))
 - `outlier_detection` (Attributes) Outlier detection settings for the upstream host when custom mode is used. (see [below for nested schema](#nestedatt--mandates--traffic--outbound--upstream_traffic_settings--settings--resilience--outlier_detection))
 
@@ -3910,7 +3910,7 @@ Optional:
 - `automatic_load_balancing` (Attributes) Settings for configuring automatic load balancing between clusters based on observed metrics. (see [below for nested schema](#nestedatt--mandates--traffic_settings--inbound--failover_settings--automatic_load_balancing))
 - `failover_priority` (List of String) FailoverPriority specifies the failover priority for traffic. FailoverPriority is an ordered list of labels  used to sort endpoints to do priority based load balancing.  This is to support traffic failover across different groups of endpoints. Internally these labels will be matched on both the client and endpoints to determine the priorities for the respective endpoints based on clients. Note: For a label to be considered for match, the previous labels must match, i.e.  nth label would be considered matched only if first n-1 labels match. If for a particular client-endpoint pair, all the n labels match, the endpoint will be considered P(0).bool If first n-1 labels match, the endpoint will be considered P(1) and so on. For getting the labels to be populated on the endpoints generated by the TSB for multicluster and eastwest scenario,  you will need to label the kubernetes service of your gateway or east-west exposed service using a label with prefix `failover.tetrate.io/`.  For example `failover.tetrate.io/version=v1` should be the label present on the kubernetes service of remote gateway or exposed service for east west traffic. Example of failoverPriority using these labels: ```yaml failoverPriority: - "failover.tetrate.io/version=v1" - "failover.tetrate.io/domain" ``` Another way to label the endpoints for eastwest scenario is to create a ServiceRoute object for the service and specify the labels in the ServiceRoute object. If there is any pod with such label present in the remote cluster, the endpoints for it will have these labels and thus it could be used in failoverPriority API. For example: Suppose if one of your clusters has service reviews only with version v1 and a second cluster with reviews only with version v2, Then use the below serviceroute object to populate service labels to the endpoints dynamically:  ```yaml apiVersion: traffic.tsb.tetrate.io/v2 kind: ServiceRoute metadata:   name: reviews   group: t1   workspace: w1   tenant: mycompany   organization: myorg spec:   service: ns1/reviews.ns1.svc.cluster.local   subsets:   - name: v1     labels:       version: v1   - name: v2     labels:       version: v2 ``` Example of failoverPriority using these labels: ```yaml failoverPriority: - "version=v1" - "failover.tetrate.io/domain" ```
 - `regional_failover` (Attributes List) Locality routing settings for all gateways in the Workspace/Organization for which this is defined. Explicitly specify the region traffic will land on when endpoints in the local region become unhealthy. Should be used together with OutlierDetection to detect unhealthy endpoints. Note: if no OutlierDetection specified, this will not take effect. (see [below for nested schema](#nestedatt--mandates--traffic_settings--inbound--failover_settings--regional_failover))
-- `topology_choice` (String) TopologyChoice specifies the topology preference for traffic priority. If not specified, the default value is `CLUSTER`. If failoverPriority is specified then this value is ignored.
+- `topology_choice` (String) TopologyChoice specifies the topology preference for traffic priority. If not specified, the default value is `CLUSTER`. If failoverPriority is specified then this value is ignored. Possible values: NONE, CLUSTER, LOCALITY.
 
 <a id="nestedatt--mandates--traffic_settings--inbound--failover_settings--automatic_load_balancing"></a>
 ### Nested Schema for `mandates.traffic_settings.inbound.failover_settings.automatic_load_balancing`
@@ -4041,7 +4041,7 @@ Optional:
 Optional:
 
 - `files` (Attributes) TLS key source from files. (see [below for nested schema](#nestedatt--mandates--traffic_settings--inbound--rate_limiting--external_service--tls--files))
-- `mode` (String) Set this to DISABLED to disable TLS (not recommended from the security perspective), SIMPLE for one-way TLS and MUTUAL for mutual TLS (where client is required to present its certificate as well)
+- `mode` (String) Set this to DISABLED to disable TLS (not recommended from the security perspective), SIMPLE for one-way TLS and MUTUAL for mutual TLS (where client is required to present its certificate as well). Possible values: DISABLED, SIMPLE, MUTUAL, ISTIO_MUTUAL.
 - `secret_name` (String) TLS key source from a Kubernetes Secret. This is applicable for gateway workloads.
 - `subject_alt_names` (List of String) Subject alternative names is the list of names that are accepted as service name as part of TLS handshake
 
@@ -4254,7 +4254,7 @@ Required:
 Required:
 
 - `requests_per_unit` (Number) Specifies the value of the rate limit.
-- `unit` (String) Specifies the unit of time for rate limit.
+- `unit` (String) Specifies the unit of time for rate limit. Possible values: UNKNOWN, SECOND, MINUTE, HOUR, DAY.
 
 
 
@@ -4335,7 +4335,7 @@ Optional:
 - `max_connection_duration` (Attributes) This specifies the duration of time after which a downstream and upstream connection will be drained and/or closed, starting from when it was first established. If there are no active streams, the connection will be closed. If there are any active streams, the drain sequence will kick-in, and the connection will be force-closed after the drain period. The default value of max connection duration is 0 or unlimited, which means that the connections will never be closed due to aging. This setting applies to the entire HTTP connection and all streams (HTTP/2 and HTTP/3) the connection carries. (see [below for nested schema](#nestedatt--mandates--traffic_settings--inbound--resilience--mesh_timeout--max_connection_duration))
 - `max_downstream_connection_duration` (Attributes) The maximum duration of a TCP connection. The duration is defined as the period since a connection was established. If not set, there is no max duration. When max_downstream_connection_duration is reached the connection will be closed. This can be used alongside with `max_connection_duration`. (see [below for nested schema](#nestedatt--mandates--traffic_settings--inbound--resilience--mesh_timeout--max_downstream_connection_duration))
 - `max_stream_duration` (Attributes) The max stream duration is the maximum time that a stream’s lifetime will span. (see [below for nested schema](#nestedatt--mandates--traffic_settings--inbound--resilience--mesh_timeout--max_stream_duration))
-- `proxy_type` (String) Specifies the type of proxy to which to apply the mesh timeout settings. The default is to apply the settings to both Gateways and Sidecars.
+- `proxy_type` (String) Specifies the type of proxy to which to apply the mesh timeout settings. The default is to apply the settings to both Gateways and Sidecars. Possible values: ANY, SIDECAR, GATEWAY.
 
 <a id="nestedatt--mandates--traffic_settings--inbound--resilience--mesh_timeout--max_connection_duration"></a>
 ### Nested Schema for `mandates.traffic_settings.inbound.resilience.mesh_timeout.max_connection_duration`
@@ -4390,7 +4390,7 @@ Required:
 Optional:
 
 - `hosts` (List of String) When the mode is `CUSTOM`, `hosts` specify the set of services that the sidecar should be able to reach. Must be in the `<namespace>/<fqdn>` format. - `./*` indicates all services in the namespace where the sidecar resides. - `ns1/*` indicates all services in the `ns1` namespace. - `ns1/svc1.com` indicates `svc1.com` service in `ns1` namespace. - `*/svc1.com` indicates `svc1.com` service in any namespace.
-- `mode` (String) A short cut for specifying the set of services accessed by the workload.
+- `mode` (String) A short cut for specifying the set of services accessed by the workload. Possible values: UNSET, NAMESPACE, GROUP, WORKSPACE, CLUSTER, CUSTOM.
 
 
 <a id="nestedatt--mandates--traffic_settings--outbound--upstream_traffic_settings"></a>
@@ -4415,7 +4415,7 @@ Optional:
 
 Optional:
 
-- `traffic_mode` (String) If set to `REQUIRED`, client sidecars under this configuration will be configured to initiate mTLS connections using mesh-generated client certificates to services that do not have a sidecar injected.
+- `traffic_mode` (String) If set to `REQUIRED`, client sidecars under this configuration will be configured to initiate mTLS connections using mesh-generated client certificates to services that do not have a sidecar injected. Possible values: UNSET, OPTIONAL, REQUIRED.
 
 
 <a id="nestedatt--mandates--traffic_settings--outbound--upstream_traffic_settings--settings--load_balancer"></a>
@@ -4424,7 +4424,7 @@ Optional:
 Optional:
 
 - `consistent_hash` (Attributes) Use consistent hash load balancing which can provide soft session affinity. (see [below for nested schema](#nestedatt--mandates--traffic_settings--outbound--upstream_traffic_settings--settings--load_balancer--consistent_hash))
-- `simple` (String) Use standard load balancing algorithms that require no tuning.
+- `simple` (String) Use standard load balancing algorithms that require no tuning. Possible values: UNSPECIFIED, RANDOM, PASSTHROUGH, ROUND_ROBIN, LEAST_REQUEST.
 
 <a id="nestedatt--mandates--traffic_settings--outbound--upstream_traffic_settings--settings--load_balancer--consistent_hash"></a>
 ### Nested Schema for `mandates.traffic_settings.outbound.upstream_traffic_settings.settings.load_balancer.consistent_hash`
@@ -4483,7 +4483,7 @@ Optional:
 
 Optional:
 
-- `circuit_breaker_sensitivity` (String) Circuit breakers in Envoy are applied per endpoint in a load balancing pool. By default, circuit breakers are disabled. If set, the sensitivity level determines the maximum number of consecutive failures that Envoy will tolerate before ejecting an endpoint from the load balancing pool.
+- `circuit_breaker_sensitivity` (String) Circuit breakers in Envoy are applied per endpoint in a load balancing pool. By default, circuit breakers are disabled. If set, the sensitivity level determines the maximum number of consecutive failures that Envoy will tolerate before ejecting an endpoint from the load balancing pool. Possible values: UNSET, LOW, MEDIUM, HIGH, CUSTOM.
 - `connection_pool` (Attributes) Configures tolerance and other settings for TCP/HTTP connections to the service. (see [below for nested schema](#nestedatt--mandates--traffic_settings--outbound--upstream_traffic_settings--settings--resilience--connection_pool))
 - `outlier_detection` (Attributes) Outlier detection settings for the upstream host when custom mode is used. (see [below for nested schema](#nestedatt--mandates--traffic_settings--outbound--upstream_traffic_settings--settings--resilience--outlier_detection))
 
@@ -4830,7 +4830,7 @@ Optional:
 Optional:
 
 - `files` (Attributes) TLS key source from files. (see [below for nested schema](#nestedatt--mandates--traffic_settings--rate_limiting--external_service--tls--files))
-- `mode` (String) Set this to DISABLED to disable TLS (not recommended from the security perspective), SIMPLE for one-way TLS and MUTUAL for mutual TLS (where client is required to present its certificate as well)
+- `mode` (String) Set this to DISABLED to disable TLS (not recommended from the security perspective), SIMPLE for one-way TLS and MUTUAL for mutual TLS (where client is required to present its certificate as well). Possible values: DISABLED, SIMPLE, MUTUAL, ISTIO_MUTUAL.
 - `secret_name` (String) TLS key source from a Kubernetes Secret. This is applicable for gateway workloads.
 - `subject_alt_names` (List of String) Subject alternative names is the list of names that are accepted as service name as part of TLS handshake
 
@@ -5043,7 +5043,7 @@ Required:
 Required:
 
 - `requests_per_unit` (Number) Specifies the value of the rate limit.
-- `unit` (String) Specifies the unit of time for rate limit.
+- `unit` (String) Specifies the unit of time for rate limit. Possible values: UNKNOWN, SECOND, MINUTE, HOUR, DAY.
 
 
 
@@ -5064,7 +5064,7 @@ Optional:
 Optional:
 
 - `hosts` (List of String) When the mode is `CUSTOM`, `hosts` specify the set of services that the sidecar should be able to reach. Must be in the `<namespace>/<fqdn>` format. - `./*` indicates all services in the namespace where the sidecar resides. - `ns1/*` indicates all services in the `ns1` namespace. - `ns1/svc1.com` indicates `svc1.com` service in `ns1` namespace. - `*/svc1.com` indicates `svc1.com` service in any namespace.
-- `mode` (String) A short cut for specifying the set of services accessed by the workload.
+- `mode` (String) A short cut for specifying the set of services accessed by the workload. Possible values: UNSET, NAMESPACE, GROUP, WORKSPACE, CLUSTER, CUSTOM.
 
 
 <a id="nestedatt--mandates--traffic_settings--resilience"></a>
@@ -5072,7 +5072,7 @@ Optional:
 
 Optional:
 
-- `circuit_breaker_sensitivity` (String) This field is DEPRECATED in favor of `upstreamTrafficSettings.resilience.circuitBreakerSensitivity`. Circuit breakers in Envoy are applied per endpoint in a load balancing pool. By default, circuit breakers are disabled. If set, the sensitivity level determines the maximum number of consecutive failures that Envoy will tolerate before ejecting an endpoint from the load balancing pool.
+- `circuit_breaker_sensitivity` (String) This field is DEPRECATED in favor of `upstreamTrafficSettings.resilience.circuitBreakerSensitivity`. Circuit breakers in Envoy are applied per endpoint in a load balancing pool. By default, circuit breakers are disabled. If set, the sensitivity level determines the maximum number of consecutive failures that Envoy will tolerate before ejecting an endpoint from the load balancing pool. Possible values: UNSET, LOW, MEDIUM, HIGH.
 - `http_request_timeout` (Attributes) This field is DEPRECATED in favor of `upstreamTrafficSettings.resilience.connectionPool.http.requestTimeout`. Timeout for HTTP requests. Disabled if not set. (see [below for nested schema](#nestedatt--mandates--traffic_settings--resilience--http_request_timeout))
 - `http_retries` (Attributes) This field is DEPRECATED in favor of `upstreamTrafficSettings.resilience.connectionPool.http.retries`. Retry policy for HTTP requests. Disabled if not set. (see [below for nested schema](#nestedatt--mandates--traffic_settings--resilience--http_retries))
 - `keep_alive` (Attributes) Keep Alive Settings. (see [below for nested schema](#nestedatt--mandates--traffic_settings--resilience--keep_alive))
@@ -5247,7 +5247,7 @@ Optional:
 
 Optional:
 
-- `traffic_mode` (String) If set to `REQUIRED`, client sidecars under this configuration will be configured to initiate mTLS connections using mesh-generated client certificates to services that do not have a sidecar injected.
+- `traffic_mode` (String) If set to `REQUIRED`, client sidecars under this configuration will be configured to initiate mTLS connections using mesh-generated client certificates to services that do not have a sidecar injected. Possible values: UNSET, OPTIONAL, REQUIRED.
 
 
 <a id="nestedatt--mandates--traffic_settings--upstream_traffic_settings--settings--load_balancer"></a>
@@ -5256,7 +5256,7 @@ Optional:
 Optional:
 
 - `consistent_hash` (Attributes) Use consistent hash load balancing which can provide soft session affinity. (see [below for nested schema](#nestedatt--mandates--traffic_settings--upstream_traffic_settings--settings--load_balancer--consistent_hash))
-- `simple` (String) Use standard load balancing algorithms that require no tuning.
+- `simple` (String) Use standard load balancing algorithms that require no tuning. Possible values: UNSPECIFIED, RANDOM, PASSTHROUGH, ROUND_ROBIN, LEAST_REQUEST.
 
 <a id="nestedatt--mandates--traffic_settings--upstream_traffic_settings--settings--load_balancer--consistent_hash"></a>
 ### Nested Schema for `mandates.traffic_settings.upstream_traffic_settings.settings.load_balancer.consistent_hash`
@@ -5315,7 +5315,7 @@ Optional:
 
 Optional:
 
-- `circuit_breaker_sensitivity` (String) Circuit breakers in Envoy are applied per endpoint in a load balancing pool. By default, circuit breakers are disabled. If set, the sensitivity level determines the maximum number of consecutive failures that Envoy will tolerate before ejecting an endpoint from the load balancing pool.
+- `circuit_breaker_sensitivity` (String) Circuit breakers in Envoy are applied per endpoint in a load balancing pool. By default, circuit breakers are disabled. If set, the sensitivity level determines the maximum number of consecutive failures that Envoy will tolerate before ejecting an endpoint from the load balancing pool. Possible values: UNSET, LOW, MEDIUM, HIGH, CUSTOM.
 - `connection_pool` (Attributes) Configures tolerance and other settings for TCP/HTTP connections to the service. (see [below for nested schema](#nestedatt--mandates--traffic_settings--upstream_traffic_settings--settings--resilience--connection_pool))
 - `outlier_detection` (Attributes) Outlier detection settings for the upstream host when custom mode is used. (see [below for nested schema](#nestedatt--mandates--traffic_settings--upstream_traffic_settings--settings--resilience--outlier_detection))
 
@@ -5580,7 +5580,7 @@ Optional:
 
 Optional:
 
-- `mode` (String) Criteria for selecting traffic by their direction. Note that CLIENT and SERVER are analogous to OUTBOUND and INBOUND, respectively. For the gateway, the field should be CLIENT or CLIENT_AND_SERVER. If not specified, the default value is CLIENT_AND_SERVER.
+- `mode` (String) Criteria for selecting traffic by their direction. Note that CLIENT and SERVER are analogous to OUTBOUND and INBOUND, respectively. For the gateway, the field should be CLIENT or CLIENT_AND_SERVER. If not specified, the default value is CLIENT_AND_SERVER. Possible values: UNDEFINED, CLIENT, SERVER, CLIENT_AND_SERVER.
 - `ports` (Attributes List) Criteria for selecting traffic by their destination port. More specifically, for the outbound traffic, the destination port would be the port of the target service. On the other hand, for the inbound traffic, the destination port is the port bound by the server process in the same Pod. If one of the given `ports` is matched, this condition is evaluated to true. If not specified, this condition is evaluated to true for any port. (see [below for nested schema](#nestedatt--mandates--wasm_extensions--match--ports))
 
 <a id="nestedatt--mandates--wasm_extensions--match--ports"></a>

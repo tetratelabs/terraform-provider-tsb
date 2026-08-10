@@ -185,7 +185,7 @@ Optional:
 Required:
 
 - `port` (Number) Port number to which traffic must be routed
-- `traffic_type` (String) Type of traffic for which a route has to be generated
+- `traffic_type` (String) Type of traffic for which a route has to be generated. Possible values: HTTP, TCP, TLS_PASSTHROUGH.
 
 Optional:
 
@@ -269,7 +269,7 @@ Optional:
 Required:
 
 - `port` (Number) Port number to which traffic must be routed
-- `traffic_type` (String) Type of traffic for which a route has to be generated
+- `traffic_type` (String) Type of traffic for which a route has to be generated. Possible values: HTTP, TCP, TLS_PASSTHROUGH.
 
 Optional:
 

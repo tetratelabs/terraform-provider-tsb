@@ -478,7 +478,7 @@ func expandExtensionWasmExtension(ctx context.Context, m *ExtensionWasmExtension
 	}
 	out.Image = m.Image.ValueString()
 	out.Source = m.Source.ValueString()
-	out.Phase = v22.WasmExtension_PluginPhase(v22.WasmExtension_PluginPhase_value[m.Phase.ValueString()])
+	out.Phase = v22.WasmExtension_PluginPhase(expandEnum(m.Phase, v22.WasmExtension_PluginPhase_value, "phase", &diags))
 	out.Priority = int32(m.Priority.ValueInt64())
 	if !m.Config.IsNull() && !m.Config.IsUnknown() {
 		sv := &structpb.Struct{}
@@ -488,7 +488,7 @@ func expandExtensionWasmExtension(ctx context.Context, m *ExtensionWasmExtension
 			out.Config = sv
 		}
 	}
-	out.ImagePullPolicy = v22.WasmExtension_PullPolicy(v22.WasmExtension_PullPolicy_value[m.ImagePullPolicy.ValueString()])
+	out.ImagePullPolicy = v22.WasmExtension_PullPolicy(expandEnum(m.ImagePullPolicy, v22.WasmExtension_PullPolicy_value, "image_pull_policy", &diags))
 	out.ImagePullSecret = m.ImagePullSecret.ValueString()
 	if m.VmConfig != nil {
 		v, d := expandVmConfig(ctx, m.VmConfig)
@@ -799,7 +799,7 @@ func expandGatewayGroup(ctx context.Context, m *GatewayGroupModel) (*v23.Group, 
 		diags.Append(d...)
 		out.NamespaceSelector = v
 	}
-	out.ConfigMode = v24.ConfigMode(v24.ConfigMode_value[m.ConfigMode.ValueString()])
+	out.ConfigMode = v24.ConfigMode(expandEnum(m.ConfigMode, v24.ConfigMode_value, "config_mode", &diags))
 	out.DeletionProtectionEnabled = m.DeletionProtectionEnabled.ValueBool()
 	if !m.Profiles.IsNull() && !m.Profiles.IsUnknown() {
 		diags.Append(m.Profiles.ElementsAs(ctx, &out.Profiles, false)...)
@@ -1003,7 +1003,7 @@ func expandGatewayInstallGateway(ctx context.Context, m *GatewayInstallGatewayMo
 		out.TerminationGracePeriodSeconds = &v
 	}
 	out.Revision = m.Revision.ValueString()
-	out.Type = v1alpha1.GatewaySpec_Type(v1alpha1.GatewaySpec_Type_value[m.Type.ValueString()])
+	out.Type = v1alpha1.GatewaySpec_Type(expandEnum(m.Type, v1alpha1.GatewaySpec_Type_value, "type", &diags))
 	out.Concurrency = int32(m.Concurrency.ValueInt64())
 	out.TargetNamespace = m.TargetNamespace.ValueString()
 	out.TargetCluster = m.TargetCluster.ValueString()
@@ -1573,15 +1573,16 @@ func flattenOIDC(ctx context.Context, p *v2.OIDC, m *OIDCModel) diag.Diagnostics
 
 // OrganizationModel is the Terraform model for Organization.
 type OrganizationModel struct {
-	ID                        types.String                   `tfsdk:"id"`
-	Parent                    types.String                   `tfsdk:"parent"`
-	Name                      types.String                   `tfsdk:"name"`
-	DisplayName               types.String                   `tfsdk:"display_name"`
-	Description               types.String                   `tfsdk:"description"`
-	DeletionProtectionEnabled types.Bool                     `tfsdk:"deletion_protection_enabled"`
-	Profiles                  types.List                     `tfsdk:"profiles"`
-	ConfigGenerationMetadata  *ConfigGenerationMetadataModel `tfsdk:"config_generation_metadata"`
-	SystemNamespaces          types.List                     `tfsdk:"system_namespaces"`
+	ID                        types.String                                 `tfsdk:"id"`
+	Parent                    types.String                                 `tfsdk:"parent"`
+	Name                      types.String                                 `tfsdk:"name"`
+	DisplayName               types.String                                 `tfsdk:"display_name"`
+	Description               types.String                                 `tfsdk:"description"`
+	DeletionProtectionEnabled types.Bool                                   `tfsdk:"deletion_protection_enabled"`
+	Profiles                  types.List                                   `tfsdk:"profiles"`
+	ConfigGenerationMetadata  *ConfigGenerationMetadataModel               `tfsdk:"config_generation_metadata"`
+	SystemNamespaces          types.List                                   `tfsdk:"system_namespaces"`
+	ServiceAccountKeySettings *Organization_ServiceAccountKeySettingsModel `tfsdk:"service_account_key_settings"`
 }
 
 // expandOrganization converts the Terraform model into a Organization proto.
@@ -1604,6 +1605,11 @@ func expandOrganization(ctx context.Context, m *OrganizationModel) (*v2.Organiza
 	}
 	if !m.SystemNamespaces.IsNull() && !m.SystemNamespaces.IsUnknown() {
 		diags.Append(m.SystemNamespaces.ElementsAs(ctx, &out.SystemNamespaces, false)...)
+	}
+	if m.ServiceAccountKeySettings != nil {
+		v, d := expandOrganization_ServiceAccountKeySettings(ctx, m.ServiceAccountKeySettings)
+		diags.Append(d...)
+		out.ServiceAccountKeySettings = v
 	}
 	return out, diags
 }
@@ -1631,6 +1637,13 @@ func flattenOrganization(ctx context.Context, p *v2.Organization, m *Organizatio
 		lv, d := listOrNull(ctx, types.StringType, p.SystemNamespaces)
 		diags.Append(d...)
 		m.SystemNamespaces = lv
+	}
+	if p.ServiceAccountKeySettings != nil {
+		var nm Organization_ServiceAccountKeySettingsModel
+		diags.Append(flattenOrganization_ServiceAccountKeySettings(ctx, p.ServiceAccountKeySettings, &nm)...)
+		m.ServiceAccountKeySettings = &nm
+	} else {
+		m.ServiceAccountKeySettings = nil
 	}
 	return diags
 }
@@ -1863,7 +1876,7 @@ func expandSecurityGroup(ctx context.Context, m *SecurityGroupModel) (*v28.Group
 		diags.Append(d...)
 		out.NamespaceSelector = v
 	}
-	out.ConfigMode = v24.ConfigMode(v24.ConfigMode_value[m.ConfigMode.ValueString()])
+	out.ConfigMode = v24.ConfigMode(expandEnum(m.ConfigMode, v24.ConfigMode_value, "config_mode", &diags))
 	out.SecurityDomain = m.SecurityDomain.ValueString()
 	out.DeletionProtectionEnabled = m.DeletionProtectionEnabled.ValueBool()
 	if !m.Profiles.IsNull() && !m.Profiles.IsUnknown() {
@@ -1933,7 +1946,7 @@ func expandSecuritySecuritySetting(ctx context.Context, m *SecuritySecuritySetti
 	out := &v28.SecuritySetting{}
 	out.DisplayName = m.DisplayName.ValueString()
 	out.Description = m.Description.ValueString()
-	out.Authentication = v28.SecuritySetting_AuthenticationMode(v28.SecuritySetting_AuthenticationMode_value[m.Authentication.ValueString()])
+	out.Authentication = v28.SecuritySetting_AuthenticationMode(expandEnum(m.Authentication, v28.SecuritySetting_AuthenticationMode_value, "authentication", &diags))
 	if m.Authorization != nil {
 		v, d := expandAuthorizationSettings(ctx, m.Authorization)
 		diags.Append(d...)
@@ -1949,7 +1962,7 @@ func expandSecuritySecuritySetting(ctx context.Context, m *SecuritySecuritySetti
 		diags.Append(d...)
 		out.Waf = v
 	}
-	out.PropagationStrategy = v24.PropagationStrategy(v24.PropagationStrategy_value[m.PropagationStrategy.ValueString()])
+	out.PropagationStrategy = v24.PropagationStrategy(expandEnum(m.PropagationStrategy, v24.PropagationStrategy_value, "propagation_strategy", &diags))
 	for i := range m.Extension {
 		ev, d := expandWasmExtensionAttachment(ctx, &m.Extension[i])
 		diags.Append(d...)
@@ -2143,7 +2156,7 @@ func expandTeam(ctx context.Context, m *TeamModel) (*v2.Team, diag.Diagnostics) 
 	if !m.Members.IsNull() && !m.Members.IsUnknown() {
 		diags.Append(m.Members.ElementsAs(ctx, &out.Members, false)...)
 	}
-	out.SourceType = v2.SourceType(v2.SourceType_value[m.SourceType.ValueString()])
+	out.SourceType = v2.SourceType(expandEnum(m.SourceType, v2.SourceType_value, "source_type", &diags))
 	if !m.OidcGroups.IsNull() && !m.OidcGroups.IsUnknown() {
 		diags.Append(m.OidcGroups.ElementsAs(ctx, &out.OidcGroups, false)...)
 	}
@@ -2322,7 +2335,7 @@ func expandTrafficGroup(ctx context.Context, m *TrafficGroupModel) (*v29.Group, 
 		diags.Append(d...)
 		out.NamespaceSelector = v
 	}
-	out.ConfigMode = v24.ConfigMode(v24.ConfigMode_value[m.ConfigMode.ValueString()])
+	out.ConfigMode = v24.ConfigMode(expandEnum(m.ConfigMode, v24.ConfigMode_value, "config_mode", &diags))
 	out.DeletionProtectionEnabled = m.DeletionProtectionEnabled.ValueBool()
 	if !m.Profiles.IsNull() && !m.Profiles.IsUnknown() {
 		diags.Append(m.Profiles.ElementsAs(ctx, &out.Profiles, false)...)
@@ -2714,7 +2727,7 @@ func expandUser(ctx context.Context, m *UserModel) (*v2.User, diag.Diagnostics) 
 	out.FirstName = m.FirstName.ValueString()
 	out.LastName = m.LastName.ValueString()
 	out.Email = m.Email.ValueString()
-	out.SourceType = v2.SourceType(v2.SourceType_value[m.SourceType.ValueString()])
+	out.SourceType = v2.SourceType(expandEnum(m.SourceType, v2.SourceType_value, "source_type", &diags))
 	out.ProviderName = m.ProviderName.ValueString()
 	out.LastReconciledGroupsHash = m.LastReconciledGroupsHash.ValueString()
 	return out, diags
@@ -3220,7 +3233,7 @@ func expandHTTP(ctx context.Context, m *HTTPModel) (*v23.HTTP, diag.Diagnostics)
 		out.RateLimiting = v
 	}
 	out.Transit = m.Transit.ValueBool()
-	out.TrafficMode = v23.TrafficMode(v23.TrafficMode_value[m.TrafficMode.ValueString()])
+	out.TrafficMode = v23.TrafficMode(expandEnum(m.TrafficMode, v23.TrafficMode_value, "traffic_mode", &diags))
 	if m.FailoverSettings != nil {
 		v, d := expandFailoverSettings(ctx, m.FailoverSettings)
 		diags.Append(d...)
@@ -3479,7 +3492,7 @@ func expandNamespaceScoping(ctx context.Context, m *NamespaceScopingModel) (*v2.
 		return nil, diags
 	}
 	out := &v2.NamespaceScoping{}
-	out.Scope = v2.NamespaceScoping_Scope(v2.NamespaceScoping_Scope_value[m.Scope.ValueString()])
+	out.Scope = v2.NamespaceScoping_Scope(expandEnum(m.Scope, v2.NamespaceScoping_Scope_value, "scope", &diags))
 	if !m.Exceptions.IsNull() && !m.Exceptions.IsUnknown() {
 		diags.Append(m.Exceptions.ElementsAs(ctx, &out.Exceptions, false)...)
 	}
@@ -3533,7 +3546,7 @@ func expandCluster_State(ctx context.Context, m *Cluster_StateModel) (*v2.Cluste
 		diags.Append(d...)
 		out.DiscoveredLocality = v
 	}
-	out.Mode = v24.ControlPlaneMode(v24.ControlPlaneMode_value[m.Mode.ValueString()])
+	out.Mode = v24.ControlPlaneMode(expandEnum(m.Mode, v24.ControlPlaneMode_value, "mode", &diags))
 	for i := range m.IstioRevisions {
 		ev, d := expandCluster_State_IstioRevision(ctx, &m.IstioRevisions[i])
 		diags.Append(d...)
@@ -3667,7 +3680,7 @@ func expandClusterOnboardingConfig_NamespaceConfig(ctx context.Context, m *Clust
 	}
 	out := &v2.ClusterOnboardingConfig_NamespaceConfig{}
 	out.Name = m.Name.ValueString()
-	out.DesiredState = v2.NamespaceDesiredState(v2.NamespaceDesiredState_value[m.DesiredState.ValueString()])
+	out.DesiredState = v2.NamespaceDesiredState(expandEnum(m.DesiredState, v2.NamespaceDesiredState_value, "desired_state", &diags))
 	return out, diags
 }
 
@@ -3725,7 +3738,7 @@ func expandGlobalTrafficSelector(ctx context.Context, m *GlobalTrafficSelectorMo
 		return nil, diags
 	}
 	out := &v22.GlobalTrafficSelector{}
-	out.Mode = v24.WorkloadMode(v24.WorkloadMode_value[m.Mode.ValueString()])
+	out.Mode = v24.WorkloadMode(expandEnum(m.Mode, v24.WorkloadMode_value, "mode", &diags))
 	return out, diags
 }
 
@@ -3918,7 +3931,7 @@ func expandTCP(ctx context.Context, m *TCPModel) (*v23.TCP, diag.Diagnostics) {
 		out.Route = v
 	}
 	out.Transit = m.Transit.ValueBool()
-	out.TrafficMode = v23.TrafficMode(v23.TrafficMode_value[m.TrafficMode.ValueString()])
+	out.TrafficMode = v23.TrafficMode(expandEnum(m.TrafficMode, v23.TrafficMode_value, "traffic_mode", &diags))
 	if m.FailoverSettings != nil {
 		v, d := expandFailoverSettings(ctx, m.FailoverSettings)
 		diags.Append(d...)
@@ -4014,7 +4027,7 @@ func expandEgressAuthorizationSettings(ctx context.Context, m *EgressAuthorizati
 			out.To = append(out.To, ev)
 		}
 	}
-	out.IdentityMatch = v24.IdentityMatch(v24.IdentityMatch_value[m.IdentityMatch.ValueString()])
+	out.IdentityMatch = v24.IdentityMatch(expandEnum(m.IdentityMatch, v24.IdentityMatch_value, "identity_match", &diags))
 	return out, diags
 }
 
@@ -4345,7 +4358,7 @@ func expandGatewaySpec(ctx context.Context, m *GatewaySpecModel) (*v23.GatewaySp
 		out.ConnectionDrainDuration = v
 	}
 	out.Revision = m.Revision.ValueString()
-	out.Type = v23.GatewaySpec_Type(v23.GatewaySpec_Type_value[m.Type.ValueString()])
+	out.Type = v23.GatewaySpec_Type(expandEnum(m.Type, v23.GatewaySpec_Type_value, "type", &diags))
 	if !m.Concurrency.IsNull() && !m.Concurrency.IsUnknown() {
 		v := int32(m.Concurrency.ValueInt64())
 		out.Concurrency = &v
@@ -4912,6 +4925,32 @@ func flattenOIDCSettings(ctx context.Context, p *v1alpha11.OIDCSettings, m *OIDC
 	return diags
 }
 
+// Organization_ServiceAccountKeySettingsModel is the Terraform model for Organization_ServiceAccountKeySettings.
+type Organization_ServiceAccountKeySettingsModel struct {
+	Algorithm  types.String `tfsdk:"algorithm"`
+	RsaKeySize types.Int64  `tfsdk:"rsa_key_size"`
+}
+
+// expandOrganization_ServiceAccountKeySettings converts the Terraform model into a Organization_ServiceAccountKeySettings proto.
+func expandOrganization_ServiceAccountKeySettings(ctx context.Context, m *Organization_ServiceAccountKeySettingsModel) (*v2.Organization_ServiceAccountKeySettings, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	if m == nil {
+		return nil, diags
+	}
+	out := &v2.Organization_ServiceAccountKeySettings{}
+	out.Algorithm = v2.Organization_ServiceAccountKeySettings_Algorithm(expandEnum(m.Algorithm, v2.Organization_ServiceAccountKeySettings_Algorithm_value, "algorithm", &diags))
+	out.RsaKeySize = uint32(m.RsaKeySize.ValueInt64())
+	return out, diags
+}
+
+// flattenOrganization_ServiceAccountKeySettings writes a Organization_ServiceAccountKeySettings proto into the Terraform model.
+func flattenOrganization_ServiceAccountKeySettings(ctx context.Context, p *v2.Organization_ServiceAccountKeySettings, m *Organization_ServiceAccountKeySettingsModel) diag.Diagnostics {
+	var diags diag.Diagnostics
+	m.Algorithm = types.StringValue(p.Algorithm.String())
+	m.RsaKeySize = types.Int64Value(int64(p.RsaKeySize))
+	return diags
+}
+
 // OrganizationSetting_NetworkSettingsModel is the Terraform model for OrganizationSetting_NetworkSettings.
 type OrganizationSetting_NetworkSettingsModel struct {
 	NetworkReachability types.Map `tfsdk:"network_reachability"`
@@ -4982,7 +5021,7 @@ func expandFailoverSettings(ctx context.Context, m *FailoverSettingsModel) (*v24
 		return nil, diags
 	}
 	out := &v24.FailoverSettings{}
-	out.TopologyChoice = v24.FailoverSettings_TopologyChoice(v24.FailoverSettings_TopologyChoice_value[m.TopologyChoice.ValueString()])
+	out.TopologyChoice = v24.FailoverSettings_TopologyChoice(expandEnum(m.TopologyChoice, v24.FailoverSettings_TopologyChoice_value, "topology_choice", &diags))
 	if !m.FailoverPriority.IsNull() && !m.FailoverPriority.IsUnknown() {
 		diags.Append(m.FailoverPriority.ElementsAs(ctx, &out.FailoverPriority, false)...)
 	}
@@ -5146,7 +5185,7 @@ func expandRole_Rule(ctx context.Context, m *Role_RuleModel) (*v27.Role_Rule, di
 		diags.Append(m.Permissions.ElementsAs(ctx, &tmp, false)...)
 		out.Permissions = make([]v27.Permission, len(tmp))
 		for i := range tmp {
-			out.Permissions[i] = v27.Permission(v27.Permission_value[tmp[i]])
+			out.Permissions[i] = v27.Permission(expandEnumString(tmp[i], v27.Permission_value, "permissions", &diags))
 		}
 	}
 	return out, diags
@@ -5189,7 +5228,7 @@ func expandAuthorizationSettings(ctx context.Context, m *AuthorizationSettingsMo
 		return nil, diags
 	}
 	out := &v28.AuthorizationSettings{}
-	out.Mode = v28.AuthorizationSettings_Mode(v28.AuthorizationSettings_Mode_value[m.Mode.ValueString()])
+	out.Mode = v28.AuthorizationSettings_Mode(expandEnum(m.Mode, v28.AuthorizationSettings_Mode_value, "mode", &diags))
 	if !m.ServiceAccounts.IsNull() && !m.ServiceAccounts.IsUnknown() {
 		diags.Append(m.ServiceAccounts.ElementsAs(ctx, &out.ServiceAccounts, false)...)
 	}
@@ -5203,7 +5242,7 @@ func expandAuthorizationSettings(ctx context.Context, m *AuthorizationSettingsMo
 		diags.Append(d...)
 		out.Rules = v
 	}
-	out.IdentityMatch = v24.IdentityMatch(v24.IdentityMatch_value[m.IdentityMatch.ValueString()])
+	out.IdentityMatch = v24.IdentityMatch(expandEnum(m.IdentityMatch, v24.IdentityMatch_value, "identity_match", &diags))
 	return out, diags
 }
 
@@ -5247,7 +5286,7 @@ func expandAuthenticationSettings(ctx context.Context, m *AuthenticationSettings
 		return nil, diags
 	}
 	out := &v28.AuthenticationSettings{}
-	out.TrafficMode = v28.SecuritySetting_AuthenticationMode(v28.SecuritySetting_AuthenticationMode_value[m.TrafficMode.ValueString()])
+	out.TrafficMode = v28.SecuritySetting_AuthenticationMode(expandEnum(m.TrafficMode, v28.SecuritySetting_AuthenticationMode_value, "traffic_mode", &diags))
 	if m.Http != nil {
 		v, d := expandAuthAuthentication(ctx, m.Http)
 		diags.Append(d...)
@@ -5423,7 +5462,7 @@ func expandServiceRoute_PortLevelTrafficSettings(ctx context.Context, m *Service
 	}
 	out := &v29.ServiceRoute_PortLevelTrafficSettings{}
 	out.Port = uint32(m.Port.ValueInt64())
-	out.TrafficType = v29.ServiceRoute_TrafficType(v29.ServiceRoute_TrafficType_value[m.TrafficType.ValueString()])
+	out.TrafficType = v29.ServiceRoute_TrafficType(expandEnum(m.TrafficType, v29.ServiceRoute_TrafficType_value, "traffic_type", &diags))
 	if m.StickySession != nil {
 		v, d := expandServiceRoute_StickySession(ctx, m.StickySession)
 		diags.Append(d...)
@@ -5628,7 +5667,7 @@ func expandReachabilitySettings(ctx context.Context, m *ReachabilitySettingsMode
 		return nil, diags
 	}
 	out := &v29.ReachabilitySettings{}
-	out.Mode = v29.ReachabilitySettings_Mode(v29.ReachabilitySettings_Mode_value[m.Mode.ValueString()])
+	out.Mode = v29.ReachabilitySettings_Mode(expandEnum(m.Mode, v29.ReachabilitySettings_Mode_value, "mode", &diags))
 	if !m.Hosts.IsNull() && !m.Hosts.IsUnknown() {
 		diags.Append(m.Hosts.ElementsAs(ctx, &out.Hosts, false)...)
 	}
@@ -5677,7 +5716,7 @@ func expandResilienceSettings(ctx context.Context, m *ResilienceSettingsModel) (
 		diags.Append(d...)
 		out.KeepAlive = v
 	}
-	out.CircuitBreakerSensitivity = v29.ResilienceSettings_Sensitivity(v29.ResilienceSettings_Sensitivity_value[m.CircuitBreakerSensitivity.ValueString()])
+	out.CircuitBreakerSensitivity = v29.ResilienceSettings_Sensitivity(expandEnum(m.CircuitBreakerSensitivity, v29.ResilienceSettings_Sensitivity_value, "circuit_breaker_sensitivity", &diags))
 	return out, diags
 }
 
@@ -6073,15 +6112,15 @@ func expandServerTLSSettings(ctx context.Context, m *ServerTLSSettingsModel) (*v
 		return nil, diags
 	}
 	out := &v23.ServerTLSSettings{}
-	out.Mode = v23.ServerTLSSettings_TLSMode(v23.ServerTLSSettings_TLSMode_value[m.Mode.ValueString()])
+	out.Mode = v23.ServerTLSSettings_TLSMode(expandEnum(m.Mode, v23.ServerTLSSettings_TLSMode_value, "mode", &diags))
 	out.SecretName = m.SecretName.ValueString()
 	if m.Files != nil {
 		v, d := expandServerTLSSettings_FileSource(ctx, m.Files)
 		diags.Append(d...)
 		out.Files = v
 	}
-	out.MinProtocolVersion = v23.TLSProtocol(v23.TLSProtocol_value[m.MinProtocolVersion.ValueString()])
-	out.MaxProtocolVersion = v23.TLSProtocol(v23.TLSProtocol_value[m.MaxProtocolVersion.ValueString()])
+	out.MinProtocolVersion = v23.TLSProtocol(expandEnum(m.MinProtocolVersion, v23.TLSProtocol_value, "min_protocol_version", &diags))
+	out.MaxProtocolVersion = v23.TLSProtocol(expandEnum(m.MaxProtocolVersion, v23.TLSProtocol_value, "max_protocol_version", &diags))
 	if !m.CipherSuites.IsNull() && !m.CipherSuites.IsUnknown() {
 		diags.Append(m.CipherSuites.ElementsAs(ctx, &out.CipherSuites, false)...)
 	}
@@ -6616,7 +6655,7 @@ func expandService(ctx context.Context, m *ServiceModel) (*v2.Service, diag.Diag
 	if !m.SpiffeIds.IsNull() && !m.SpiffeIds.IsUnknown() {
 		diags.Append(m.SpiffeIds.ElementsAs(ctx, &out.SpiffeIds, false)...)
 	}
-	out.State = v2.Service_State(v2.Service_State_value[m.State.ValueString()])
+	out.State = v2.Service_State(expandEnum(m.State, v2.Service_State_value, "state", &diags))
 	if !m.Labels.IsNull() && !m.Labels.IsUnknown() {
 		diags.Append(m.Labels.ElementsAs(ctx, &out.Labels, false)...)
 	}
@@ -6700,7 +6739,7 @@ func expandIstioStatus(ctx context.Context, m *IstioStatusModel) (*v2.IstioStatu
 		return nil, diags
 	}
 	out := &v2.IstioStatus{}
-	out.IstioInjection = v2.IstioStatus_IstioInjection(v2.IstioStatus_IstioInjection_value[m.IstioInjection.ValueString()])
+	out.IstioInjection = v2.IstioStatus_IstioInjection(expandEnum(m.IstioInjection, v2.IstioStatus_IstioInjection_value, "istio_injection", &diags))
 	out.IstioRevision = m.IstioRevision.ValueString()
 	return out, diags
 }
@@ -6755,7 +6794,7 @@ func expandCluster_State_IstioRevision(ctx context.Context, m *Cluster_State_Ist
 	out := &v2.Cluster_State_IstioRevision{}
 	out.Revision = m.Revision.ValueString()
 	out.Version = m.Version.ValueString()
-	out.Distribution = v2.Cluster_State_IstioRevision_Distribution(v2.Cluster_State_IstioRevision_Distribution_value[m.Distribution.ValueString()])
+	out.Distribution = v2.Cluster_State_IstioRevision_Distribution(expandEnum(m.Distribution, v2.Cluster_State_IstioRevision_Distribution_value, "distribution", &diags))
 	return out, diags
 }
 
@@ -6855,7 +6894,7 @@ func expandEnvVar(ctx context.Context, m *EnvVarModel) (*v22.EnvVar, diag.Diagno
 	}
 	out := &v22.EnvVar{}
 	out.Name = m.Name.ValueString()
-	out.ValueFrom = v22.EnvValueSource(v22.EnvValueSource_value[m.ValueFrom.ValueString()])
+	out.ValueFrom = v22.EnvValueSource(expandEnum(m.ValueFrom, v22.EnvValueSource_value, "value_from", &diags))
 	out.Value = m.Value.ValueString()
 	return out, diags
 }
@@ -6882,7 +6921,7 @@ func expandTrafficSelector(ctx context.Context, m *TrafficSelectorModel) (*v24.T
 		return nil, diags
 	}
 	out := &v24.TrafficSelector{}
-	out.Mode = v24.WorkloadMode(v24.WorkloadMode_value[m.Mode.ValueString()])
+	out.Mode = v24.WorkloadMode(expandEnum(m.Mode, v24.WorkloadMode_value, "mode", &diags))
 	for i := range m.Ports {
 		ev, d := expandPortSelector(ctx, &m.Ports[i])
 		diags.Append(d...)
@@ -6970,7 +7009,7 @@ func expandGatewayAuthorizationSettings(ctx context.Context, m *GatewayAuthoriza
 		return nil, diags
 	}
 	out := &v23.AuthorizationSettings{}
-	out.Mode = v23.AuthorizationSettings_Mode(v23.AuthorizationSettings_Mode_value[m.Mode.ValueString()])
+	out.Mode = v23.AuthorizationSettings_Mode(expandEnum(m.Mode, v23.AuthorizationSettings_Mode_value, "mode", &diags))
 	if !m.ServiceAccounts.IsNull() && !m.ServiceAccounts.IsUnknown() {
 		diags.Append(m.ServiceAccounts.ElementsAs(ctx, &out.ServiceAccounts, false)...)
 	}
@@ -8817,7 +8856,7 @@ func expandOIDCConfig(ctx context.Context, m *OIDCConfigModel) (*v210.OIDCConfig
 		return nil, diags
 	}
 	out := &v210.OIDCConfig{}
-	out.GrantType = v210.OIDCGrantType(v210.OIDCGrantType_value[m.GrantType.ValueString()])
+	out.GrantType = v210.OIDCGrantType(expandEnum(m.GrantType, v210.OIDCGrantType_value, "grant_type", &diags))
 	out.ClientId = m.ClientId.ValueString()
 	out.ClientTokenSecret = m.ClientTokenSecret.ValueString()
 	out.RedirectUri = m.RedirectUri.ValueString()
@@ -8826,7 +8865,7 @@ func expandOIDCConfig(ctx context.Context, m *OIDCConfigModel) (*v210.OIDCConfig
 		diags.Append(d...)
 		out.Provider = v
 	}
-	out.AuthType = v210.OIDCAuthType(v210.OIDCAuthType_value[m.AuthType.ValueString()])
+	out.AuthType = v210.OIDCAuthType(expandEnum(m.AuthType, v210.OIDCAuthType_value, "auth_type", &diags))
 	if !m.AuthScopes.IsNull() && !m.AuthScopes.IsUnknown() {
 		diags.Append(m.AuthScopes.ElementsAs(ctx, &out.AuthScopes, false)...)
 	}
@@ -9589,16 +9628,17 @@ func flattenImage(ctx context.Context, p *v1alpha14.Image, m *ImageModel) diag.D
 
 // ControlPlaneSpecModel is the Terraform model for ControlPlaneSpec.
 type ControlPlaneSpecModel struct {
-	Hub               types.String                             `tfsdk:"hub"`
-	ImagePullSecrets  []LocalObjectReferenceModel              `tfsdk:"image_pull_secrets"`
-	Components        *ControlPlaneComponentSetModel           `tfsdk:"components"`
-	ProviderSettings  *ProviderSettingsModel                   `tfsdk:"provider_settings"`
-	ManagementPlane   *ManagementPlaneSettingsModel            `tfsdk:"management_plane"`
-	MeshExpansion     *MeshExpansionSettingsModel              `tfsdk:"mesh_expansion"`
-	TelemetryStore    *ControlPlaneSpec_TelemetryStoreModel    `tfsdk:"telemetry_store"`
-	MeshObservability *ControlPlaneSpec_MeshObservabilityModel `tfsdk:"mesh_observability"`
-	Tier1Cluster      types.Bool                               `tfsdk:"tier1_cluster"`
-	Mode              types.String                             `tfsdk:"mode"`
+	Hub                           types.String                             `tfsdk:"hub"`
+	ImagePullSecrets              []LocalObjectReferenceModel              `tfsdk:"image_pull_secrets"`
+	Components                    *ControlPlaneComponentSetModel           `tfsdk:"components"`
+	ProviderSettings              *ProviderSettingsModel                   `tfsdk:"provider_settings"`
+	ManagementPlane               *ManagementPlaneSettingsModel            `tfsdk:"management_plane"`
+	MeshExpansion                 *MeshExpansionSettingsModel              `tfsdk:"mesh_expansion"`
+	TelemetryStore                *ControlPlaneSpec_TelemetryStoreModel    `tfsdk:"telemetry_store"`
+	TelemetryStoreMigrationTarget *ControlPlaneSpec_TelemetryStoreModel    `tfsdk:"telemetry_store_migration_target"`
+	MeshObservability             *ControlPlaneSpec_MeshObservabilityModel `tfsdk:"mesh_observability"`
+	Tier1Cluster                  types.Bool                               `tfsdk:"tier1_cluster"`
+	Mode                          types.String                             `tfsdk:"mode"`
 }
 
 // expandControlPlaneSpec converts the Terraform model into a ControlPlaneSpec proto.
@@ -9641,13 +9681,18 @@ func expandControlPlaneSpec(ctx context.Context, m *ControlPlaneSpecModel) (*v1a
 		diags.Append(d...)
 		out.TelemetryStore = v
 	}
+	if m.TelemetryStoreMigrationTarget != nil {
+		v, d := expandControlPlaneSpec_TelemetryStore(ctx, m.TelemetryStoreMigrationTarget)
+		diags.Append(d...)
+		out.TelemetryStoreMigrationTarget = v
+	}
 	if m.MeshObservability != nil {
 		v, d := expandControlPlaneSpec_MeshObservability(ctx, m.MeshObservability)
 		diags.Append(d...)
 		out.MeshObservability = v
 	}
 	out.Tier1Cluster = m.Tier1Cluster.ValueBool()
-	out.Mode = v24.ControlPlaneMode(v24.ControlPlaneMode_value[m.Mode.ValueString()])
+	out.Mode = v24.ControlPlaneMode(expandEnum(m.Mode, v24.ControlPlaneMode_value, "mode", &diags))
 	return out, diags
 }
 
@@ -9695,6 +9740,13 @@ func flattenControlPlaneSpec(ctx context.Context, p *v1alpha15.ControlPlaneSpec,
 		m.TelemetryStore = &nm
 	} else {
 		m.TelemetryStore = nil
+	}
+	if p.TelemetryStoreMigrationTarget != nil {
+		var nm ControlPlaneSpec_TelemetryStoreModel
+		diags.Append(flattenControlPlaneSpec_TelemetryStore(ctx, p.TelemetryStoreMigrationTarget, &nm)...)
+		m.TelemetryStoreMigrationTarget = &nm
+	} else {
+		m.TelemetryStoreMigrationTarget = nil
 	}
 	if p.MeshObservability != nil {
 		var nm ControlPlaneSpec_MeshObservabilityModel
@@ -9811,7 +9863,7 @@ func expandOperator(ctx context.Context, m *OperatorModel) (*v1alpha14.Operator,
 		diags.Append(d...)
 		out.ServiceAccount = v
 	}
-	out.ControlPlaneMode = v24.ControlPlaneMode(v24.ControlPlaneMode_value[m.ControlPlaneMode.ValueString()])
+	out.ControlPlaneMode = v24.ControlPlaneMode(expandEnum(m.ControlPlaneMode, v24.ControlPlaneMode_value, "control_plane_mode", &diags))
 	out.DeletionProtection = m.DeletionProtection.ValueString()
 	return out, diags
 }
@@ -10729,7 +10781,7 @@ func expandGroupSync(ctx context.Context, m *GroupSyncModel) (*v1alpha11.GroupSy
 		return nil, diags
 	}
 	out := &v1alpha11.GroupSync{}
-	out.Mode = v1alpha11.GroupSync_Mode(v1alpha11.GroupSync_Mode_value[m.Mode.ValueString()])
+	out.Mode = v1alpha11.GroupSync_Mode(expandEnum(m.Mode, v1alpha11.GroupSync_Mode_value, "mode", &diags))
 	if m.MaxDriftWindow != nil {
 		v, d := expandDuration(ctx, m.MaxDriftWindow)
 		diags.Append(d...)
@@ -11226,7 +11278,7 @@ func expandClientTLSSettings(ctx context.Context, m *ClientTLSSettingsModel) (*v
 		return nil, diags
 	}
 	out := &v210.ClientTLSSettings{}
-	out.Mode = v210.TLSMode(v210.TLSMode_value[m.Mode.ValueString()])
+	out.Mode = v210.TLSMode(expandEnum(m.Mode, v210.TLSMode_value, "mode", &diags))
 	if m.Files != nil {
 		v, d := expandTLSFileSource(ctx, m.Files)
 		diags.Append(d...)
@@ -11356,7 +11408,7 @@ func expandUpstreamResilienceSettings(ctx context.Context, m *UpstreamResilience
 		diags.Append(d...)
 		out.ConnectionPool = v
 	}
-	out.CircuitBreakerSensitivity = v29.UpstreamResilienceSettings_Sensitivity(v29.UpstreamResilienceSettings_Sensitivity_value[m.CircuitBreakerSensitivity.ValueString()])
+	out.CircuitBreakerSensitivity = v29.UpstreamResilienceSettings_Sensitivity(expandEnum(m.CircuitBreakerSensitivity, v29.UpstreamResilienceSettings_Sensitivity_value, "circuit_breaker_sensitivity", &diags))
 	if m.OutlierDetection != nil {
 		v, d := expandUpstreamResilienceSettings_OutlierDetection(ctx, m.OutlierDetection)
 		diags.Append(d...)
@@ -11400,7 +11452,7 @@ func expandLoadBalancerSettings(ctx context.Context, m *LoadBalancerSettingsMode
 	}
 	out := &v29.LoadBalancerSettings{}
 	if !m.Simple.IsNull() && !m.Simple.IsUnknown() {
-		out.LbPolicy = &v29.LoadBalancerSettings_Simple{Simple: v29.LoadBalancerSettings_SimpleLB(v29.LoadBalancerSettings_SimpleLB_value[m.Simple.ValueString()])}
+		out.LbPolicy = &v29.LoadBalancerSettings_Simple{Simple: v29.LoadBalancerSettings_SimpleLB(expandEnum(m.Simple, v29.LoadBalancerSettings_SimpleLB_value, "simple", &diags))}
 	}
 	if m.ConsistentHash != nil {
 		v, d := expandLoadBalancerSettings_ConsistentHashLB(ctx, m.ConsistentHash)
@@ -11442,7 +11494,7 @@ func expandTrafficAuthenticationSettings(ctx context.Context, m *TrafficAuthenti
 		return nil, diags
 	}
 	out := &v29.AuthenticationSettings{}
-	out.TrafficMode = v29.AuthenticationSettings_AuthenticationMode(v29.AuthenticationSettings_AuthenticationMode_value[m.TrafficMode.ValueString()])
+	out.TrafficMode = v29.AuthenticationSettings_AuthenticationMode(expandEnum(m.TrafficMode, v29.AuthenticationSettings_AuthenticationMode_value, "traffic_mode", &diags))
 	return out, diags
 }
 
@@ -11516,7 +11568,7 @@ func expandDownstreamResilienceSettings_MeshTimeout(ctx context.Context, m *Down
 		diags.Append(d...)
 		out.MaxDownstreamConnectionDuration = v
 	}
-	out.ProxyType = v29.ProxyType(v29.ProxyType_value[m.ProxyType.ValueString()])
+	out.ProxyType = v29.ProxyType(expandEnum(m.ProxyType, v29.ProxyType_value, "proxy_type", &diags))
 	return out, diags
 }
 
@@ -11672,7 +11724,7 @@ func expandOIDCCookieConfig(ctx context.Context, m *OIDCCookieConfigModel) (*v21
 		return nil, diags
 	}
 	out := &v210.OIDCCookieConfig{}
-	out.SameSite = v210.OIDCCookieConfig_SameSite(v210.OIDCCookieConfig_SameSite_value[m.SameSite.ValueString()])
+	out.SameSite = v210.OIDCCookieConfig_SameSite(expandEnum(m.SameSite, v210.OIDCCookieConfig_SameSite_value, "same_site", &diags))
 	return out, diags
 }
 
@@ -13596,7 +13648,7 @@ func expandProfileFailoverSettings(ctx context.Context, m *ProfileFailoverSettin
 		return nil, diags
 	}
 	out := &v26.FailoverSettings{}
-	out.TopologyChoice = v26.FailoverSettings_TopologyChoice(v26.FailoverSettings_TopologyChoice_value[m.TopologyChoice.ValueString()])
+	out.TopologyChoice = v26.FailoverSettings_TopologyChoice(expandEnum(m.TopologyChoice, v26.FailoverSettings_TopologyChoice_value, "topology_choice", &diags))
 	if !m.FailoverPriority.IsNull() && !m.FailoverPriority.IsUnknown() {
 		diags.Append(m.FailoverPriority.ElementsAs(ctx, &out.FailoverPriority, false)...)
 	}
@@ -13653,7 +13705,7 @@ func expandProfileReachabilitySettings(ctx context.Context, m *ProfileReachabili
 		return nil, diags
 	}
 	out := &v26.ReachabilitySettings{}
-	out.Mode = v26.ReachabilitySettings_Mode(v26.ReachabilitySettings_Mode_value[m.Mode.ValueString()])
+	out.Mode = v26.ReachabilitySettings_Mode(expandEnum(m.Mode, v26.ReachabilitySettings_Mode_value, "mode", &diags))
 	if !m.Hosts.IsNull() && !m.Hosts.IsUnknown() {
 		diags.Append(m.Hosts.ElementsAs(ctx, &out.Hosts, false)...)
 	}
@@ -13898,7 +13950,7 @@ func expandRateLimitSettings_RateLimitValue(ctx context.Context, m *RateLimitSet
 	}
 	out := &v23.RateLimitSettings_RateLimitValue{}
 	out.RequestsPerUnit = uint32(m.RequestsPerUnit.ValueInt64())
-	out.Unit = v23.RateLimitSettings_RateLimitValue_Unit(v23.RateLimitSettings_RateLimitValue_Unit_value[m.Unit.ValueString()])
+	out.Unit = v23.RateLimitSettings_RateLimitValue_Unit(expandEnum(m.Unit, v23.RateLimitSettings_RateLimitValue_Unit_value, "unit", &diags))
 	return out, diags
 }
 
@@ -14915,6 +14967,7 @@ type OapModel struct {
 	StorageIndexMergingEnabled  types.Bool                    `tfsdk:"storage_index_merging_enabled"`
 	KubeSpec                    *KubernetesComponentSpecModel `tfsdk:"kube_spec"`
 	LogLevel                    types.String                  `tfsdk:"log_level"`
+	AlsAuthLogEnabled           types.Bool                    `tfsdk:"als_auth_log_enabled"`
 }
 
 // expandOap converts the Terraform model into a Oap proto.
@@ -14933,6 +14986,7 @@ func expandOap(ctx context.Context, m *OapModel) (*v1alpha15.Oap, diag.Diagnosti
 		out.KubeSpec = v
 	}
 	out.LogLevel = m.LogLevel.ValueString()
+	out.AlsAuthLogEnabled = m.AlsAuthLogEnabled.ValueBool()
 	return out, diags
 }
 
@@ -14950,6 +15004,7 @@ func flattenOap(ctx context.Context, p *v1alpha15.Oap, m *OapModel) diag.Diagnos
 		m.KubeSpec = nil
 	}
 	m.LogLevel = stringOrNull(p.LogLevel)
+	m.AlsAuthLogEnabled = types.BoolValue(p.AlsAuthLogEnabled)
 	return diags
 }
 
@@ -14977,7 +15032,7 @@ func expandXCP(ctx context.Context, m *XCPModel) (*v1alpha15.XCP, diag.Diagnosti
 		return nil, diags
 	}
 	out := &v1alpha15.XCP{}
-	out.CentralAuthMode = v1alpha15.XCP_CentralAuthMode(v1alpha15.XCP_CentralAuthMode_value[m.CentralAuthMode.ValueString()])
+	out.CentralAuthMode = v1alpha15.XCP_CentralAuthMode(expandEnum(m.CentralAuthMode, v1alpha15.XCP_CentralAuthMode_value, "central_auth_mode", &diags))
 	if m.ConfigProtection != nil {
 		v, d := expandConfigProtection(ctx, m.ConfigProtection)
 		diags.Append(d...)
@@ -15494,7 +15549,7 @@ func expandGitOps(ctx context.Context, m *GitOpsModel) (*common.GitOps, diag.Dia
 		diags.Append(d...)
 		out.WebhookTimeout = v
 	}
-	out.PushMode = common.GitOps_PushMode(common.GitOps_PushMode_value[m.PushMode.ValueString()])
+	out.PushMode = common.GitOps_PushMode(expandEnum(m.PushMode, common.GitOps_PushMode_value, "push_mode", &diags))
 	return out, diags
 }
 
@@ -15938,7 +15993,7 @@ func expandRoute53Settings(ctx context.Context, m *Route53SettingsModel) (*v1alp
 		diags.Append(d...)
 		out.NamespaceSelector = v
 	}
-	out.Policy = v1alpha15.Route53Settings_Policy(v1alpha15.Route53Settings_Policy_value[m.Policy.ValueString()])
+	out.Policy = v1alpha15.Route53Settings_Policy(expandEnum(m.Policy, v1alpha15.Route53Settings_Policy_value, "policy", &diags))
 	if !m.DomainFilter.IsNull() && !m.DomainFilter.IsUnknown() {
 		diags.Append(m.DomainFilter.ElementsAs(ctx, &out.DomainFilter, false)...)
 	}
@@ -16339,7 +16394,7 @@ func expandElasticSearchSettings(ctx context.Context, m *ElasticSearchSettingsMo
 	out := &v1alpha15.ElasticSearchSettings{}
 	out.Host = m.Host.ValueString()
 	out.Port = int32(m.Port.ValueInt64())
-	out.Protocol = v1alpha15.ElasticSearchSettings_Protocol(v1alpha15.ElasticSearchSettings_Protocol_value[m.Protocol.ValueString()])
+	out.Protocol = v1alpha15.ElasticSearchSettings_Protocol(expandEnum(m.Protocol, v1alpha15.ElasticSearchSettings_Protocol_value, "protocol", &diags))
 	out.SelfSigned = m.SelfSigned.ValueBool()
 	out.Version = int32(m.Version.ValueInt64())
 	out.IndexPrefix = m.IndexPrefix.ValueString()
@@ -17222,7 +17277,7 @@ func expandProfileDownstreamResilienceSettings_MeshTimeout(ctx context.Context, 
 		diags.Append(d...)
 		out.MaxDownstreamConnectionDuration = v
 	}
-	out.ProxyType = v26.ProxyType(v26.ProxyType_value[m.ProxyType.ValueString()])
+	out.ProxyType = v26.ProxyType(expandEnum(m.ProxyType, v26.ProxyType_value, "proxy_type", &diags))
 	return out, diags
 }
 
@@ -18479,7 +18534,7 @@ func expandCertManagerSettings(ctx context.Context, m *CertManagerSettingsModel)
 		return nil, diags
 	}
 	out := &common.CertManagerSettings{}
-	out.Managed = common.CertManagerSettings_Managed(common.CertManagerSettings_Managed_value[m.Managed.ValueString()])
+	out.Managed = common.CertManagerSettings_Managed(expandEnum(m.Managed, common.CertManagerSettings_Managed_value, "managed", &diags))
 	if m.CertManagerSpec != nil {
 		v, d := expandCertManagerSettings_CertManagerSpec(ctx, m.CertManagerSpec)
 		diags.Append(d...)
@@ -18899,7 +18954,7 @@ func expandRoute53Settings_FilterSettings(ctx context.Context, m *Route53Setting
 	if !m.ExcludeDomain.IsNull() && !m.ExcludeDomain.IsUnknown() {
 		diags.Append(m.ExcludeDomain.ElementsAs(ctx, &out.ExcludeDomain, false)...)
 	}
-	out.ZoneType = v1alpha15.Route53Settings_FilterSettings_AWSZoneType(v1alpha15.Route53Settings_FilterSettings_AWSZoneType_value[m.ZoneType.ValueString()])
+	out.ZoneType = v1alpha15.Route53Settings_FilterSettings_AWSZoneType(expandEnum(m.ZoneType, v1alpha15.Route53Settings_FilterSettings_AWSZoneType_value, "zone_type", &diags))
 	if !m.ZoneTagFilter.IsNull() && !m.ZoneTagFilter.IsUnknown() {
 		diags.Append(m.ZoneTagFilter.ElementsAs(ctx, &out.ZoneTagFilter, false)...)
 	}
@@ -19545,7 +19600,7 @@ func expandProfileClientTLSSettings(ctx context.Context, m *ProfileClientTLSSett
 		return nil, diags
 	}
 	out := &v26.ClientTLSSettings{}
-	out.Mode = v26.TLSMode(v26.TLSMode_value[m.Mode.ValueString()])
+	out.Mode = v26.TLSMode(expandEnum(m.Mode, v26.TLSMode_value, "mode", &diags))
 	if m.Files != nil {
 		v, d := expandProfileTLSFileSource(ctx, m.Files)
 		diags.Append(d...)
@@ -19638,7 +19693,7 @@ func expandProfileUpstreamResilienceSettings(ctx context.Context, m *ProfileUpst
 		diags.Append(d...)
 		out.ConnectionPool = v
 	}
-	out.CircuitBreakerSensitivity = v26.UpstreamResilienceSettings_Sensitivity(v26.UpstreamResilienceSettings_Sensitivity_value[m.CircuitBreakerSensitivity.ValueString()])
+	out.CircuitBreakerSensitivity = v26.UpstreamResilienceSettings_Sensitivity(expandEnum(m.CircuitBreakerSensitivity, v26.UpstreamResilienceSettings_Sensitivity_value, "circuit_breaker_sensitivity", &diags))
 	if m.OutlierDetection != nil {
 		v, d := expandProfileUpstreamResilienceSettings_OutlierDetection(ctx, m.OutlierDetection)
 		diags.Append(d...)
@@ -19682,7 +19737,7 @@ func expandProfileLoadBalancerSettings(ctx context.Context, m *ProfileLoadBalanc
 	}
 	out := &v26.LoadBalancerSettings{}
 	if !m.Simple.IsNull() && !m.Simple.IsUnknown() {
-		out.LbPolicy = &v26.LoadBalancerSettings_Simple{Simple: v26.LoadBalancerSettings_SimpleLB(v26.LoadBalancerSettings_SimpleLB_value[m.Simple.ValueString()])}
+		out.LbPolicy = &v26.LoadBalancerSettings_Simple{Simple: v26.LoadBalancerSettings_SimpleLB(expandEnum(m.Simple, v26.LoadBalancerSettings_SimpleLB_value, "simple", &diags))}
 	}
 	if m.ConsistentHash != nil {
 		v, d := expandProfileLoadBalancerSettings_ConsistentHashLB(ctx, m.ConsistentHash)
@@ -19724,7 +19779,7 @@ func expandProfileAuthenticationSettings(ctx context.Context, m *ProfileAuthenti
 		return nil, diags
 	}
 	out := &v26.AuthenticationSettings{}
-	out.TrafficMode = v26.AuthenticationSettings_AuthenticationMode(v26.AuthenticationSettings_AuthenticationMode_value[m.TrafficMode.ValueString()])
+	out.TrafficMode = v26.AuthenticationSettings_AuthenticationMode(expandEnum(m.TrafficMode, v26.AuthenticationSettings_AuthenticationMode_value, "traffic_mode", &diags))
 	return out, diags
 }
 
@@ -20438,7 +20493,7 @@ func expandProfileRateLimitSettings_RateLimitValue(ctx context.Context, m *Profi
 		v := uint32(m.RequestsPerUnit.ValueInt64())
 		out.RequestsPerUnit = &v
 	}
-	out.Unit = v26.RateLimitSettings_RateLimitValue_Unit(v26.RateLimitSettings_RateLimitValue_Unit_value[m.Unit.ValueString()])
+	out.Unit = v26.RateLimitSettings_RateLimitValue_Unit(expandEnum(m.Unit, v26.RateLimitSettings_RateLimitValue_Unit_value, "unit", &diags))
 	return out, diags
 }
 

@@ -34,4 +34,4 @@ Required:
 
 Optional:
 
-- `desired_state` (String) The desired state of the namespace.
+- `desired_state` (String) The desired state of the namespace. Possible values: DESIRED_UNDEFINED, DESIRED_UNASSIGNED, DESIRED_DISABLED, DESIRED_IGNORED, DESIRED_ONBOARDED, DESIRED_SYSTEM.

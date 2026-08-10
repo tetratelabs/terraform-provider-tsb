@@ -5,7 +5,9 @@ package provider
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -23,6 +25,56 @@ func stringOrNull(s string) types.String {
 		return types.StringNull()
 	}
 	return types.StringValue(s)
+}
+
+// expandEnum converts a Terraform string into the proto enum number registered
+// under that name in values (an <Enum>_value map), appending an error diagnostic
+// when the name is not declared.
+//
+// A null or unknown value maps to the enum's zero value with no diagnostic.
+// fixupSchema makes optional leaf attributes Optional+Computed, so an attribute
+// the user never set arrives null (or unknown, at create) — that is how "unset"
+// legitimately reaches the wire as the proto default.
+func expandEnum(v types.String, values map[string]int32, attrName string, diags *diag.Diagnostics) int32 {
+	if v.IsNull() || v.IsUnknown() {
+		return 0
+	}
+	return expandEnumString(v.ValueString(), values, attrName, diags)
+}
+
+// expandEnumString is expandEnum for a value already unwrapped to a string, as in
+// the repeated-enum path where elements arrive through ElementsAs.
+//
+// An unrecognised name is an error rather than a silent fallback to the zero
+// value. Besides catching typos, this covers version skew: protobuf-go renders an
+// enum number the compiled descriptor does not know as its decimal, so a newer
+// server's value round-trips through state as e.g. "7". Sending the zero value
+// instead would silently overwrite the server's real configuration.
+func expandEnumString(s string, values map[string]int32, attrName string, diags *diag.Diagnostics) int32 {
+	if s == "" {
+		return 0
+	}
+	if n, ok := values[s]; ok {
+		return n
+	}
+	diags.AddError(
+		"Invalid value for "+attrName,
+		fmt.Sprintf("%q is not a valid %s value. Valid values are: %s.",
+			s, attrName, strings.Join(enumNames(values), ", ")),
+	)
+	return 0
+}
+
+// enumNames returns the declared names of an <Enum>_value map ordered by enum
+// number, so diagnostics list them in proto declaration order rather than in Go's
+// randomized map order.
+func enumNames(values map[string]int32) []string {
+	names := make([]string, 0, len(values))
+	for n := range values {
+		names = append(names, n)
+	}
+	sort.Slice(names, func(i, j int) bool { return values[names[i]] < values[names[j]] })
+	return names
 }
 
 // listOrNull builds a Terraform list from a Go slice, returning a null list for

@@ -65,7 +65,7 @@ Required:
 Optional:
 
 - `from` (Attributes) Specifies the source workloads or service accounts for this authorization rule. If not set, any source is allowed. (see [below for nested schema](#nestedatt--egress_authorization--from))
-- `identity_match` (String) IdentityMatch defines the client identity used for evaluating the authorization rules. Possible values are: SOURCE_IDENTITY, PEER_CERTIFICATE, and PERMISSIVE. If no mode is specified, the mode is treated as PERMISSIVE mode.
+- `identity_match` (String) IdentityMatch defines the client identity used for evaluating the authorization rules. Possible values are: SOURCE_IDENTITY, PEER_CERTIFICATE, and PERMISSIVE. If no mode is specified, the mode is treated as PERMISSIVE mode. Possible values: UNKNOWN, PEER_CERTIFICATE, PERMISSIVE, SOURCE_IDENTITY.
 
 <a id="nestedatt--egress_authorization--to"></a>
 ### Nested Schema for `egress_authorization.to`
@@ -95,7 +95,7 @@ Optional:
 
 Optional:
 
-- `mode` (String) A shortcut for specifying the set of allowed callers. Deprecated: use `resources` or `serviceAccounts` instead.
+- `mode` (String) A shortcut for specifying the set of allowed callers. Deprecated: use `resources` or `serviceAccounts` instead. Possible values: UNSET, NAMESPACE, GROUP, WORKSPACE, CLUSTER, SERVICE_ACCOUNT.
 - `resources` (List of String) `resources` specify the allowed set of resources using TSB FQNs. - `organizations/myorg/tenants/mycompany-a/workspaces/w2` - allow access from workspace w2. - `organizations/myorg/tenants/mycompany/workspaces/w1/securitygroups/s1` - allow access from security group s1.
 - `service_accounts` (List of String) `serviceAccounts` specify the allowed set of service accounts (and the workloads using them). Must be in the `<namespace>/<service-account-name>` format. - `./*` indicates all service accounts in the namespace where the sidecar resides. - `ns1/*` indicates all service accounts in the `ns1` namespace. - `ns1/svc1-sa` indicates `svc1-sa` service account in `ns1` namespace. Namespace should be a valid Kubernetes namespace, which follows [RFC 1123 Label Names](https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names) rules. Service account should be a valid Kubernetes service account, which follows [DNS Subdomain Names](https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-subdomain-names) rules.
 
@@ -120,7 +120,7 @@ Optional:
 - `port` (Number) The port where the server is exposed at the gateway workload(pod). If the k8s service, which is fronting the workload pod, has TargetPort as 8443 for the Port 443, this could be configured as 8443 or 443. Two servers with different protocols (HTTP and HTTPS) should not share the same port. Note that port 15443 is reserved for internal use. If the `transit` flag is set to true, populating the `port` will lead to an error, as the server is considered internal to the mesh. TSB will automatically  configure mTLS port(15443) for east-west multicluster traffic. If the `trafficMode`` flag is set to `EGRESS`` or the `trafficMode` is set to `AUTO` and the gateway deployment is of type EGRESS, populating the port will result in an error, as the server is considered only for egress. TSB will automatically configure the mTLS port (15443) on the gateway to receive the mesh traffic.
 - `rate_limiting` (Attributes) Configuration for rate limiting requests. This configuration is namespaced to a particular HttpServer. (see [below for nested schema](#nestedatt--http--rate_limiting))
 - `tls` (Attributes) TLS certificate info. If omitted, the gateway will expose a plain text HTTP server. If the `transit` flag is set to true, populating the `tls` will lead to an error, as the server is considered internal to the mesh. Gateway uses Istio mutual TLS to secure the connection for forwarding the traffic. (see [below for nested schema](#nestedatt--http--tls))
-- `traffic_mode` (String) Traffic mode specifies the type of configuration applied to this server. It defines how the server handles traffic within the mesh. This setting determines whether the server manages incoming, outgoing, or transit traffic. By default, this setting is not required and will auto-detect the mode based on the deployment where this configuration is attached to. If unspecified, the default mode is AUTO. Possible values are: - AUTO: Automatically detect the type of configuration from the underlying Gateway deployment. - INGRESS: Configuration for managing incoming traffic into the mesh. - EGRESS: Configuration for managing outgoing traffic from the mesh to external services. - TRANSIT: Configuration for facilitating transit traffic between different clusters within the mesh.
+- `traffic_mode` (String) Traffic mode specifies the type of configuration applied to this server. It defines how the server handles traffic within the mesh. This setting determines whether the server manages incoming, outgoing, or transit traffic. By default, this setting is not required and will auto-detect the mode based on the deployment where this configuration is attached to. If unspecified, the default mode is AUTO. Possible values are: - AUTO: Automatically detect the type of configuration from the underlying Gateway deployment. - INGRESS: Configuration for managing incoming traffic into the mesh. - EGRESS: Configuration for managing outgoing traffic from the mesh to external services. - TRANSIT: Configuration for facilitating transit traffic between different clusters within the mesh. Possible values: AUTO, INGRESS, EGRESS, TRANSIT.
 - `transit` (Boolean) If set to true, the server is configured to be exposed within the mesh. This configuration enables forwarding traffic between two clusters that are not directly reachable. Deprecated: use `trafficMode: TRANSIT` instead.
 
 <a id="nestedatt--http--routing"></a>
@@ -413,7 +413,7 @@ Optional:
 Optional:
 
 - `files` (Attributes) TLS key source from files. (see [below for nested schema](#nestedatt--http--routing--rules--route--service_destination--tls--files))
-- `mode` (String) Set this to DISABLED to disable TLS (not recommended from the security perspective), SIMPLE for one-way TLS and MUTUAL for mutual TLS (where client is required to present its certificate as well)
+- `mode` (String) Set this to DISABLED to disable TLS (not recommended from the security perspective), SIMPLE for one-way TLS and MUTUAL for mutual TLS (where client is required to present its certificate as well). Possible values: DISABLED, SIMPLE, MUTUAL, ISTIO_MUTUAL.
 - `secret_name` (String) TLS key source from a Kubernetes Secret. This is applicable for gateway workloads.
 - `subject_alt_names` (List of String) Subject alternative names is the list of names that are accepted as service name as part of TLS handshake
 
@@ -533,9 +533,9 @@ Required:
 Optional:
 
 - `auth_scopes` (List of String) Optional list of OAuth scopes to be claimed in the authorization request. If not specified, defaults to `user` scope. OAuth RFC https://tools.ietf.org/html/rfc6749#section-3.3
-- `auth_type` (String) Defines how client_id and client_secret are sent in OAuth client to OAuth server requests. RFC https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1
+- `auth_type` (String) Defines how client_id and client_secret are sent in OAuth client to OAuth server requests. RFC https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1. Possible values: DEFAULT_AUTH_TYPE, URL_ENCODED_BODY, BASIC_AUTH.
 - `cookie_config` (Attributes) Configuration applied to the cookies set by the proxy during the OIDC authentication flow. Unlike Envoy, which allows configuring each cookie individually, a single cookie configuration is applied uniformly to every cookie the proxy sets (bearer token, HMAC, expiry, ID token, refresh token, nonce, and code verifier cookies). If not specified, the proxy defaults are used for all cookies. (see [below for nested schema](#nestedatt--http--authentication--oidc--cookie_config))
-- `grant_type` (String) Configure the [authorization grant type to be used](https://datatracker.ietf.org/doc/html/rfc6749#section-1.3)
+- `grant_type` (String) Configure the [authorization grant type to be used](https://datatracker.ietf.org/doc/html/rfc6749#section-1.3). Possible values: DEFAULT_GRANT_TYPE, AUTHORIZATION_CODE.
 - `redirect_path_matcher` (String) Matching criteria used to determine whether a path appears to be the result of a redirect from the authorization server. The query and fragment string (if present) are removed in the URL path portion. For example, the path `/data` will match URI header `/data#fragment?param=value`. If not provided, default is derived from redirect_uri path Only exact match is configurable
 - `signout_path` (String) The path to sign a user out, clearing their credential cookies. If not provided, default is `/signout` Only exact match is configurable
 - `use_refresh_token` (Attributes) Enable automatic access token refresh using associated refresh token [(see RFC 6749 section 6)](https://datatracker.ietf.org/doc/html/rfc6749#section-6) provided that the OAuth server supports that. If not set defaults to `true`. (see [below for nested schema](#nestedatt--http--authentication--oidc--use_refresh_token))
@@ -561,7 +561,7 @@ Optional:
 Optional:
 
 - `files` (Attributes) TLS key source from files. (see [below for nested schema](#nestedatt--http--authentication--oidc--provider--tls--files))
-- `mode` (String) Set this to DISABLED to disable TLS (not recommended from the security perspective), SIMPLE for one-way TLS and MUTUAL for mutual TLS (where client is required to present its certificate as well)
+- `mode` (String) Set this to DISABLED to disable TLS (not recommended from the security perspective), SIMPLE for one-way TLS and MUTUAL for mutual TLS (where client is required to present its certificate as well). Possible values: DISABLED, SIMPLE, MUTUAL, ISTIO_MUTUAL.
 - `secret_name` (String) TLS key source from a Kubernetes Secret. This is applicable for gateway workloads.
 - `subject_alt_names` (List of String) Subject alternative names is the list of names that are accepted as service name as part of TLS handshake
 
@@ -582,7 +582,7 @@ Optional:
 
 Optional:
 
-- `same_site` (String) The value used for the `SameSite` cookie attribute. If not specified, defaults to `DISABLED` (the attribute is not set).
+- `same_site` (String) The value used for the `SameSite` cookie attribute. If not specified, defaults to `DISABLED` (the attribute is not set). Possible values: DISABLED, STRICT, LAX, NONE.
 
 
 <a id="nestedatt--http--authentication--oidc--use_refresh_token"></a>
@@ -685,7 +685,7 @@ Optional:
 Optional:
 
 - `files` (Attributes) TLS key source from files. (see [below for nested schema](#nestedatt--http--authorization--external--tls--files))
-- `mode` (String) Set this to DISABLED to disable TLS (not recommended from the security perspective), SIMPLE for one-way TLS and MUTUAL for mutual TLS (where client is required to present its certificate as well)
+- `mode` (String) Set this to DISABLED to disable TLS (not recommended from the security perspective), SIMPLE for one-way TLS and MUTUAL for mutual TLS (where client is required to present its certificate as well). Possible values: DISABLED, SIMPLE, MUTUAL, ISTIO_MUTUAL.
 - `secret_name` (String) TLS key source from a Kubernetes Secret. This is applicable for gateway workloads.
 - `subject_alt_names` (List of String) Subject alternative names is the list of names that are accepted as service name as part of TLS handshake
 
@@ -838,7 +838,7 @@ Optional:
 - `automatic_load_balancing` (Attributes) Settings for configuring automatic load balancing between clusters based on observed metrics. (see [below for nested schema](#nestedatt--http--failover_settings--automatic_load_balancing))
 - `failover_priority` (List of String) FailoverPriority specifies the failover priority for traffic. FailoverPriority is an ordered list of labels  used to sort endpoints to do priority based load balancing.  This is to support traffic failover across different groups of endpoints. Internally these labels will be matched on both the client and endpoints to determine the priorities for the respective endpoints based on clients. Note: For a label to be considered for match, the previous labels must match, i.e.  nth label would be considered matched only if first n-1 labels match. If for a particular client-endpoint pair, all the n labels match, the endpoint will be considered P(0).bool If first n-1 labels match, the endpoint will be considered P(1) and so on. For getting the labels to be populated on the endpoints generated by the TSB for multicluster and eastwest scenario,  you will need to label the kubernetes service of your gateway or east-west exposed service using a label with prefix `failover.tetrate.io/`.  For example `failover.tetrate.io/version=v1` should be the label present on the kubernetes service of remote gateway or exposed service for east west traffic. Example of failoverPriority using these labels: ```yaml failoverPriority: - "failover.tetrate.io/version=v1" - "failover.tetrate.io/domain" ``` Another way to label the endpoints for eastwest scenario is to create a ServiceRoute object for the service and specify the labels in the ServiceRoute object. If there is any pod with such label present in the remote cluster, the endpoints for it will have these labels and thus it could be used in failoverPriority API. For example: Suppose if one of your clusters has service reviews only with version v1 and a second cluster with reviews only with version v2, Then use the below serviceroute object to populate service labels to the endpoints dynamically:  ```yaml apiVersion: traffic.tsb.tetrate.io/v2 kind: ServiceRoute metadata:   name: reviews   group: t1   workspace: w1   tenant: mycompany   organization: myorg spec:   service: ns1/reviews.ns1.svc.cluster.local   subsets:   - name: v1     labels:       version: v1   - name: v2     labels:       version: v2 ``` Example of failoverPriority using these labels: ```yaml failoverPriority: - "version=v1" - "failover.tetrate.io/domain" ```
 - `regional_failover` (Attributes List) Locality routing settings for all gateways in the Workspace/Organization for which this is defined. Explicitly specify the region traffic will land on when endpoints in the local region become unhealthy. Should be used together with OutlierDetection to detect unhealthy endpoints. Note: if no OutlierDetection specified, this will not take effect. (see [below for nested schema](#nestedatt--http--failover_settings--regional_failover))
-- `topology_choice` (String) TopologyChoice specifies the topology preference for traffic priority. If not specified, the default value is `CLUSTER`. If failoverPriority is specified then this value is ignored.
+- `topology_choice` (String) TopologyChoice specifies the topology preference for traffic priority. If not specified, the default value is `CLUSTER`. If failoverPriority is specified then this value is ignored. Possible values: NONE, CLUSTER, LOCALITY.
 
 <a id="nestedatt--http--failover_settings--automatic_load_balancing"></a>
 ### Nested Schema for `http.failover_settings.automatic_load_balancing`
@@ -986,7 +986,7 @@ Optional:
 Optional:
 
 - `files` (Attributes) TLS key source from files. (see [below for nested schema](#nestedatt--http--rate_limiting--external_service--tls--files))
-- `mode` (String) Set this to DISABLED to disable TLS (not recommended from the security perspective), SIMPLE for one-way TLS and MUTUAL for mutual TLS (where client is required to present its certificate as well)
+- `mode` (String) Set this to DISABLED to disable TLS (not recommended from the security perspective), SIMPLE for one-way TLS and MUTUAL for mutual TLS (where client is required to present its certificate as well). Possible values: DISABLED, SIMPLE, MUTUAL, ISTIO_MUTUAL.
 - `secret_name` (String) TLS key source from a Kubernetes Secret. This is applicable for gateway workloads.
 - `subject_alt_names` (List of String) Subject alternative names is the list of names that are accepted as service name as part of TLS handshake
 
@@ -1199,7 +1199,7 @@ Required:
 Required:
 
 - `requests_per_unit` (Number) Specifies the value of the rate limit.
-- `unit` (String) Specifies the unit of time for rate limit.
+- `unit` (String) Specifies the unit of time for rate limit. Possible values: UNKNOWN, SECOND, MINUTE, HOUR, DAY.
 
 
 
@@ -1221,9 +1221,9 @@ Optional:
 
 - `cipher_suites` (List of String) List of cipher suites to be used for TLS connections. Examples of cipher suites: - "TLS_RSA_WITH_AES_256_CBC_SHA" - "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256" - "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384" - "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256" - "TLS_RSA_WITH_3DES_EDE_CBC_SHA"
 - `files` (Attributes) Load the keys and certificates from files accessible to the ingress gateway workload. Only one of secretName or files must be specified. (see [below for nested schema](#nestedatt--http--tls--files))
-- `max_protocol_version` (String) Set the maximum supported TLS protocol version. Valid options: TLS_AUTO, TLSV1_0, TLSV1_1, TLSV1_2, TLSV1_3.
-- `min_protocol_version` (String) Set the minimum supported TLS protocol version. Valid options: TLS_AUTO, TLSV1_0, TLSV1_1, TLSV1_2, TLSV1_3.
-- `mode` (String) Set this to SIMPLE, or MUTUAL for one-way TLS, mutual TLS respectively.
+- `max_protocol_version` (String) Set the maximum supported TLS protocol version. Valid options: TLS_AUTO, TLSV1_0, TLSV1_1, TLSV1_2, TLSV1_3. Possible values: TLS_AUTO, TLSV1_0, TLSV1_1, TLSV1_2, TLSV1_3.
+- `min_protocol_version` (String) Set the minimum supported TLS protocol version. Valid options: TLS_AUTO, TLSV1_0, TLSV1_1, TLSV1_2, TLSV1_3. Possible values: TLS_AUTO, TLSV1_0, TLSV1_1, TLSV1_2, TLSV1_3.
+- `mode` (String) Set this to SIMPLE, or MUTUAL for one-way TLS, mutual TLS respectively. Possible values: DISABLED, SIMPLE, MUTUAL, OPTIONAL_MUTUAL.
 - `secret_name` (String) The name of the secret in Kubernetes that holds the TLS certs including the CA certificates. For Unified Gateway config, if the secret is in a different namespace than the gateway, it must be prefixed with the namespace in the format of <namespace>/<secret_name>. For all other gateway types, the secret must be in the same namespace as the gateway resource. The secret (type generic) should contain the following keys and values: key: `<privateKey>`, cert: `<serverCert>`, cacert: `<CACertificate>`.
 - `subject_alt_names` (List of String) List of Subject Alternative Names (SAN) from the client's certificate that are accepted for client identity verification during the TLS handshake.
 
@@ -1253,7 +1253,7 @@ Optional:
 - `failover_settings` (Attributes) Failover settings for all clients that try to access the hostname defined in this section. Note that this is a server side setting when gateway acts as tier2 gateway i.e. gateways with service destination, which means configuration is made by user on the server/service side but TSB configures client proxies to implement these configs. When this gateway acts a tier1 gateway i.e. when cluster destination is configured, this setting will be applied for the tier1 to tier2 failover. (see [below for nested schema](#nestedatt--tcp--failover_settings))
 - `port` (Number) The port where the server is exposed. Note that the port 15443 is reserved. Also beware of the conflict among the services using different protocols on the same port. The conflict occurs in the following scenarios 1. Using plaintext and TLS (passthrough/termination) 2. Mixing multiple protocols without TLS (HTTP and non-HTTP protocols like Kafka, Zookeeper etc) 3. Multiple non-HTTP protocols without TLS Valid scenarios (for same port, multiple services) 1. Multiple protocols (HTTP, non-HTTP) with TLS passthrough/termination 2. Multiple HTTP services 3. Single non-HTTP service without TLS If the `transit` flag is set to true, populating the `port` will lead to an error, as the server is considered internal to the mesh. TSB will automatically  configure mTLS port(15443) for east-west multicluster traffic.
 - `tls` (Attributes) TLS certificate info to terminate the TLS connection. If the `transit` flag is set to true, populating the `tls` will lead to an error, as the server is considered internal to the mesh. Gateway uses Istio mutual TLS to secure the connection for forwarding the traffic. (see [below for nested schema](#nestedatt--tcp--tls))
-- `traffic_mode` (String) Traffic mode specifies the type of configuration applied to this server. It defines how the server handles traffic within the mesh. This setting determines whether the server manages incoming, outgoing, or transit traffic. By default, this setting is not required and will auto-detect the mode based on the deployment where this configuration is attached to. If unspecified, the default mode is AUTO. Possible values are: - AUTO: Automatically detect the type of configuration from the underlying Gateway deployment. - INGRESS: Configuration for managing incoming traffic into the mesh. - EGRESS: Configuration for managing outgoing traffic from the mesh to external services. - TRANSIT: Configuration for facilitating transit traffic between different clusters within the mesh.
+- `traffic_mode` (String) Traffic mode specifies the type of configuration applied to this server. It defines how the server handles traffic within the mesh. This setting determines whether the server manages incoming, outgoing, or transit traffic. By default, this setting is not required and will auto-detect the mode based on the deployment where this configuration is attached to. If unspecified, the default mode is AUTO. Possible values are: - AUTO: Automatically detect the type of configuration from the underlying Gateway deployment. - INGRESS: Configuration for managing incoming traffic into the mesh. - EGRESS: Configuration for managing outgoing traffic from the mesh to external services. - TRANSIT: Configuration for facilitating transit traffic between different clusters within the mesh. Possible values: AUTO, INGRESS, EGRESS, TRANSIT.
 - `transit` (Boolean) If set to true, the server is configured to be exposed within the mesh. This configuration enables forwarding traffic between two clusters that are not directly reachable. Deprecated: use `trafficMode: TRANSIT` instead.
 
 <a id="nestedatt--tcp--route"></a>
@@ -1301,7 +1301,7 @@ Optional:
 Optional:
 
 - `files` (Attributes) TLS key source from files. (see [below for nested schema](#nestedatt--tcp--route--service_destination--tls--files))
-- `mode` (String) Set this to DISABLED to disable TLS (not recommended from the security perspective), SIMPLE for one-way TLS and MUTUAL for mutual TLS (where client is required to present its certificate as well)
+- `mode` (String) Set this to DISABLED to disable TLS (not recommended from the security perspective), SIMPLE for one-way TLS and MUTUAL for mutual TLS (where client is required to present its certificate as well). Possible values: DISABLED, SIMPLE, MUTUAL, ISTIO_MUTUAL.
 - `secret_name` (String) TLS key source from a Kubernetes Secret. This is applicable for gateway workloads.
 - `subject_alt_names` (List of String) Subject alternative names is the list of names that are accepted as service name as part of TLS handshake
 
@@ -1326,7 +1326,7 @@ Optional:
 - `automatic_load_balancing` (Attributes) Settings for configuring automatic load balancing between clusters based on observed metrics. (see [below for nested schema](#nestedatt--tcp--failover_settings--automatic_load_balancing))
 - `failover_priority` (List of String) FailoverPriority specifies the failover priority for traffic. FailoverPriority is an ordered list of labels  used to sort endpoints to do priority based load balancing.  This is to support traffic failover across different groups of endpoints. Internally these labels will be matched on both the client and endpoints to determine the priorities for the respective endpoints based on clients. Note: For a label to be considered for match, the previous labels must match, i.e.  nth label would be considered matched only if first n-1 labels match. If for a particular client-endpoint pair, all the n labels match, the endpoint will be considered P(0).bool If first n-1 labels match, the endpoint will be considered P(1) and so on. For getting the labels to be populated on the endpoints generated by the TSB for multicluster and eastwest scenario,  you will need to label the kubernetes service of your gateway or east-west exposed service using a label with prefix `failover.tetrate.io/`.  For example `failover.tetrate.io/version=v1` should be the label present on the kubernetes service of remote gateway or exposed service for east west traffic. Example of failoverPriority using these labels: ```yaml failoverPriority: - "failover.tetrate.io/version=v1" - "failover.tetrate.io/domain" ``` Another way to label the endpoints for eastwest scenario is to create a ServiceRoute object for the service and specify the labels in the ServiceRoute object. If there is any pod with such label present in the remote cluster, the endpoints for it will have these labels and thus it could be used in failoverPriority API. For example: Suppose if one of your clusters has service reviews only with version v1 and a second cluster with reviews only with version v2, Then use the below serviceroute object to populate service labels to the endpoints dynamically:  ```yaml apiVersion: traffic.tsb.tetrate.io/v2 kind: ServiceRoute metadata:   name: reviews   group: t1   workspace: w1   tenant: mycompany   organization: myorg spec:   service: ns1/reviews.ns1.svc.cluster.local   subsets:   - name: v1     labels:       version: v1   - name: v2     labels:       version: v2 ``` Example of failoverPriority using these labels: ```yaml failoverPriority: - "version=v1" - "failover.tetrate.io/domain" ```
 - `regional_failover` (Attributes List) Locality routing settings for all gateways in the Workspace/Organization for which this is defined. Explicitly specify the region traffic will land on when endpoints in the local region become unhealthy. Should be used together with OutlierDetection to detect unhealthy endpoints. Note: if no OutlierDetection specified, this will not take effect. (see [below for nested schema](#nestedatt--tcp--failover_settings--regional_failover))
-- `topology_choice` (String) TopologyChoice specifies the topology preference for traffic priority. If not specified, the default value is `CLUSTER`. If failoverPriority is specified then this value is ignored.
+- `topology_choice` (String) TopologyChoice specifies the topology preference for traffic priority. If not specified, the default value is `CLUSTER`. If failoverPriority is specified then this value is ignored. Possible values: NONE, CLUSTER, LOCALITY.
 
 <a id="nestedatt--tcp--failover_settings--automatic_load_balancing"></a>
 ### Nested Schema for `tcp.failover_settings.automatic_load_balancing`
@@ -1361,9 +1361,9 @@ Optional:
 
 - `cipher_suites` (List of String) List of cipher suites to be used for TLS connections. Examples of cipher suites: - "TLS_RSA_WITH_AES_256_CBC_SHA" - "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256" - "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384" - "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256" - "TLS_RSA_WITH_3DES_EDE_CBC_SHA"
 - `files` (Attributes) Load the keys and certificates from files accessible to the ingress gateway workload. Only one of secretName or files must be specified. (see [below for nested schema](#nestedatt--tcp--tls--files))
-- `max_protocol_version` (String) Set the maximum supported TLS protocol version. Valid options: TLS_AUTO, TLSV1_0, TLSV1_1, TLSV1_2, TLSV1_3.
-- `min_protocol_version` (String) Set the minimum supported TLS protocol version. Valid options: TLS_AUTO, TLSV1_0, TLSV1_1, TLSV1_2, TLSV1_3.
-- `mode` (String) Set this to SIMPLE, or MUTUAL for one-way TLS, mutual TLS respectively.
+- `max_protocol_version` (String) Set the maximum supported TLS protocol version. Valid options: TLS_AUTO, TLSV1_0, TLSV1_1, TLSV1_2, TLSV1_3. Possible values: TLS_AUTO, TLSV1_0, TLSV1_1, TLSV1_2, TLSV1_3.
+- `min_protocol_version` (String) Set the minimum supported TLS protocol version. Valid options: TLS_AUTO, TLSV1_0, TLSV1_1, TLSV1_2, TLSV1_3. Possible values: TLS_AUTO, TLSV1_0, TLSV1_1, TLSV1_2, TLSV1_3.
+- `mode` (String) Set this to SIMPLE, or MUTUAL for one-way TLS, mutual TLS respectively. Possible values: DISABLED, SIMPLE, MUTUAL, OPTIONAL_MUTUAL.
 - `secret_name` (String) The name of the secret in Kubernetes that holds the TLS certs including the CA certificates. For Unified Gateway config, if the secret is in a different namespace than the gateway, it must be prefixed with the namespace in the format of <namespace>/<secret_name>. For all other gateway types, the secret must be in the same namespace as the gateway resource. The secret (type generic) should contain the following keys and values: key: `<privateKey>`, cert: `<serverCert>`, cacert: `<CACertificate>`.
 - `subject_alt_names` (List of String) List of Subject Alternative Names (SAN) from the client's certificate that are accepted for client identity verification during the TLS handshake.
 
@@ -1438,7 +1438,7 @@ Optional:
 Optional:
 
 - `files` (Attributes) TLS key source from files. (see [below for nested schema](#nestedatt--tls--route--service_destination--tls--files))
-- `mode` (String) Set this to DISABLED to disable TLS (not recommended from the security perspective), SIMPLE for one-way TLS and MUTUAL for mutual TLS (where client is required to present its certificate as well)
+- `mode` (String) Set this to DISABLED to disable TLS (not recommended from the security perspective), SIMPLE for one-way TLS and MUTUAL for mutual TLS (where client is required to present its certificate as well). Possible values: DISABLED, SIMPLE, MUTUAL, ISTIO_MUTUAL.
 - `secret_name` (String) TLS key source from a Kubernetes Secret. This is applicable for gateway workloads.
 - `subject_alt_names` (List of String) Subject alternative names is the list of names that are accepted as service name as part of TLS handshake
 
@@ -1463,7 +1463,7 @@ Optional:
 - `automatic_load_balancing` (Attributes) Settings for configuring automatic load balancing between clusters based on observed metrics. (see [below for nested schema](#nestedatt--tls--failover_settings--automatic_load_balancing))
 - `failover_priority` (List of String) FailoverPriority specifies the failover priority for traffic. FailoverPriority is an ordered list of labels  used to sort endpoints to do priority based load balancing.  This is to support traffic failover across different groups of endpoints. Internally these labels will be matched on both the client and endpoints to determine the priorities for the respective endpoints based on clients. Note: For a label to be considered for match, the previous labels must match, i.e.  nth label would be considered matched only if first n-1 labels match. If for a particular client-endpoint pair, all the n labels match, the endpoint will be considered P(0).bool If first n-1 labels match, the endpoint will be considered P(1) and so on. For getting the labels to be populated on the endpoints generated by the TSB for multicluster and eastwest scenario,  you will need to label the kubernetes service of your gateway or east-west exposed service using a label with prefix `failover.tetrate.io/`.  For example `failover.tetrate.io/version=v1` should be the label present on the kubernetes service of remote gateway or exposed service for east west traffic. Example of failoverPriority using these labels: ```yaml failoverPriority: - "failover.tetrate.io/version=v1" - "failover.tetrate.io/domain" ``` Another way to label the endpoints for eastwest scenario is to create a ServiceRoute object for the service and specify the labels in the ServiceRoute object. If there is any pod with such label present in the remote cluster, the endpoints for it will have these labels and thus it could be used in failoverPriority API. For example: Suppose if one of your clusters has service reviews only with version v1 and a second cluster with reviews only with version v2, Then use the below serviceroute object to populate service labels to the endpoints dynamically:  ```yaml apiVersion: traffic.tsb.tetrate.io/v2 kind: ServiceRoute metadata:   name: reviews   group: t1   workspace: w1   tenant: mycompany   organization: myorg spec:   service: ns1/reviews.ns1.svc.cluster.local   subsets:   - name: v1     labels:       version: v1   - name: v2     labels:       version: v2 ``` Example of failoverPriority using these labels: ```yaml failoverPriority: - "version=v1" - "failover.tetrate.io/domain" ```
 - `regional_failover` (Attributes List) Locality routing settings for all gateways in the Workspace/Organization for which this is defined. Explicitly specify the region traffic will land on when endpoints in the local region become unhealthy. Should be used together with OutlierDetection to detect unhealthy endpoints. Note: if no OutlierDetection specified, this will not take effect. (see [below for nested schema](#nestedatt--tls--failover_settings--regional_failover))
-- `topology_choice` (String) TopologyChoice specifies the topology preference for traffic priority. If not specified, the default value is `CLUSTER`. If failoverPriority is specified then this value is ignored.
+- `topology_choice` (String) TopologyChoice specifies the topology preference for traffic priority. If not specified, the default value is `CLUSTER`. If failoverPriority is specified then this value is ignored. Possible values: NONE, CLUSTER, LOCALITY.
 
 <a id="nestedatt--tls--failover_settings--automatic_load_balancing"></a>
 ### Nested Schema for `tls.failover_settings.automatic_load_balancing`
@@ -1513,7 +1513,7 @@ Optional:
 
 Optional:
 
-- `mode` (String) Criteria for selecting traffic by their direction. Note that CLIENT and SERVER are analogous to OUTBOUND and INBOUND, respectively. For the gateway, the field should be CLIENT or CLIENT_AND_SERVER. If not specified, the default value is CLIENT_AND_SERVER.
+- `mode` (String) Criteria for selecting traffic by their direction. Note that CLIENT and SERVER are analogous to OUTBOUND and INBOUND, respectively. For the gateway, the field should be CLIENT or CLIENT_AND_SERVER. If not specified, the default value is CLIENT_AND_SERVER. Possible values: UNDEFINED, CLIENT, SERVER, CLIENT_AND_SERVER.
 - `ports` (Attributes List) Criteria for selecting traffic by their destination port. More specifically, for the outbound traffic, the destination port would be the port of the target service. On the other hand, for the inbound traffic, the destination port is the port bound by the server process in the same Pod. If one of the given `ports` is matched, this condition is evaluated to true. If not specified, this condition is evaluated to true for any port. (see [below for nested schema](#nestedatt--wasm_plugins--match--ports))
 
 <a id="nestedatt--wasm_plugins--match--ports"></a>

@@ -49,10 +49,10 @@ resource "tsb_extension_wasm_extension" "example" {
 - `description` (String) A description of the extension.
 - `display_name` (String) User friendly name for the extension.
 - `image` (String) Deprecated. Use the `url` field instead. Repository and tag of the OCI image containing the WASM extension.
-- `image_pull_policy` (String) The pull behaviour to be applied when fetching Wasm module by either OCI image or http/https. Only relevant when referencing Wasm module without any digest, including the digest in OCI image URL or sha256 field in `vm_config`. Defaults to IfNotPresent, except when an OCI image is referenced in the `url` and the `latest` tag is used, in which case `Always` is the default, mirroring K8s behaviour.
+- `image_pull_policy` (String) The pull behaviour to be applied when fetching Wasm module by either OCI image or http/https. Only relevant when referencing Wasm module without any digest, including the digest in OCI image URL or sha256 field in `vm_config`. Defaults to IfNotPresent, except when an OCI image is referenced in the `url` and the `latest` tag is used, in which case `Always` is the default, mirroring K8s behaviour. Possible values: UNSPECIFIED_POLICY, IfNotPresent, Always.
 - `image_pull_secret` (String) Credentials to use for OCI image pulling. Name of a K8s Secret that contains a docker pull secret which is to be used to authenticate against the registry when pulling the image. If TSB is configured to use the WASM download proxy, this secret must exist in the `istio-system` namespace of each cluster that has applications that use the extension. If the download proxy is disabled, the secret must exist in each application namespace that is using the extension.
 - `match` (Attributes) Specifies the criteria to determine which traffic is passed to WasmExtension. These settings are propagated to all WASMExtension Attachments. It can be overridden at attachment points. If a traffic satisfies the TrafficSelector, the traffic passes to the WasmExtension. (see [below for nested schema](#nestedatt--match))
-- `phase` (String) The phase in the filter chain where the extension will be injected. https://istio.io/latest/docs/reference/config/proxy_extensions/wasm-plugin/#PluginPhase
+- `phase` (String) The phase in the filter chain where the extension will be injected. https://istio.io/latest/docs/reference/config/proxy_extensions/wasm-plugin/#PluginPhase. Possible values: UNSPECIFIED_PHASE, AUTHN, AUTHZ, STATS.
 - `priority` (Number) Determines the ordering of WasmExtensions in the same phase. When multiple WasmExtensions are applied to the same workload in the same phase, they will be applied by priority, in descending order. If no priority is assigned it will use the default 0 value. In case of several extensions having the same priority in the same phase, the fqn will be used to sort them.
 - `source` (String) Source to find the code for the WASM extension
 - `vm_config` (Attributes) VM Configuration sent to the WASM plugin execution (see [below for nested schema](#nestedatt--vm_config))
@@ -66,7 +66,7 @@ resource "tsb_extension_wasm_extension" "example" {
 
 Optional:
 
-- `mode` (String) Criteria for selecting traffic by their direction. Note that CLIENT and SERVER are analogous to OUTBOUND and INBOUND, respectively. For the gateway, the field should be CLIENT or CLIENT_AND_SERVER. If not specified, the default value is CLIENT_AND_SERVER.
+- `mode` (String) Criteria for selecting traffic by their direction. Note that CLIENT and SERVER are analogous to OUTBOUND and INBOUND, respectively. For the gateway, the field should be CLIENT or CLIENT_AND_SERVER. If not specified, the default value is CLIENT_AND_SERVER. Possible values: UNDEFINED, CLIENT, SERVER, CLIENT_AND_SERVER.
 
 
 <a id="nestedatt--vm_config"></a>
@@ -82,7 +82,7 @@ Optional:
 Required:
 
 - `name` (String) Name of the environment variable. Must be a C_IDENTIFIER, by following this regex: [A-Za-z_][A-Za-z0-9_]*
-- `value_from` (String) Source for the environment variable's value.
+- `value_from` (String) Source for the environment variable's value. Possible values: INLINE, HOST.
 
 Optional:
 

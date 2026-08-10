@@ -102,7 +102,7 @@ Optional:
 
 - `google_admin_sdk` (Attributes) Google Admin SDK Directory API, used for Google Workspace. (see [below for nested schema](#nestedatt--config--jit_provisioning--group_sync--google_admin_sdk))
 - `max_drift_window` (Attributes) MaxDriftWindow bounds how long IdP-to-TSB membership may diverge and also clamps the OIDC bearer lifetime. Clamped to the range [15m, 24h] (snapped to the nearest bound); defaults to 24h. (see [below for nested schema](#nestedatt--config--jit_provisioning--group_sync--max_drift_window))
-- `mode` (String) Mode selects the group-reconciliation behavior. Defaults to OFF.
+- `mode` (String) Mode selects the group-reconciliation behavior. Defaults to OFF. Possible values: OFF, DRY_RUN, MEMBERSHIP_ONLY.
 - `require_mapped_team` (Boolean) RequireMappedTeam, when true, denies login or refresh for users whose group claims resolve to no existing teams (break-glass teams are exempt). Only meaningful when `mode` is not OFF.
 
 <a id="nestedatt--config--jit_provisioning--group_sync--google_admin_sdk"></a>
