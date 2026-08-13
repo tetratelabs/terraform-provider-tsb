@@ -48,5 +48,5 @@ Optional:
 
 Optional:
 
-- `algorithm` (String) Algorithm used to generate the service account key pairs.
+- `algorithm` (String) Algorithm used to generate the service account key pairs. Possible values: RS256, ES256, ES384, ES512.
 - `rsa_key_size` (Number) Size in bits of the generated RSA keys. It only applies when `algorithm` is an RSA based one, and must be left unset for the ECDSA ones, where the curve is determined by the algorithm itself. Supported values are 2048, 3072 and 4096. Defaults to 2048.
