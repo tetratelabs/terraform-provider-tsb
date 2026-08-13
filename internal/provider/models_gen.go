@@ -6541,8 +6541,9 @@ func flattenOpenAPI(ctx context.Context, p *v23.OpenAPI, m *OpenAPIModel) diag.D
 
 // ExtensionsModel is the Terraform model for Extensions.
 type ExtensionsModel struct {
-	Kong     *KongModel     `tfsdk:"kong"`
-	Composer *ComposerModel `tfsdk:"composer"`
+	Kong          *KongModel          `tfsdk:"kong"`
+	Lua           *LuaModel           `tfsdk:"lua"`
+	DynamicModule *DynamicModuleModel `tfsdk:"dynamic_module"`
 }
 
 // expandExtensions converts the Terraform model into a Extensions proto.
@@ -6557,10 +6558,15 @@ func expandExtensions(ctx context.Context, m *ExtensionsModel) (*v24.Extensions,
 		diags.Append(d...)
 		out.Kong = v
 	}
-	if m.Composer != nil {
-		v, d := expandComposer(ctx, m.Composer)
+	if m.Lua != nil {
+		v, d := expandLua(ctx, m.Lua)
 		diags.Append(d...)
-		out.Composer = v
+		out.Lua = v
+	}
+	if m.DynamicModule != nil {
+		v, d := expandDynamicModule(ctx, m.DynamicModule)
+		diags.Append(d...)
+		out.DynamicModule = v
 	}
 	return out, diags
 }
@@ -6575,12 +6581,19 @@ func flattenExtensions(ctx context.Context, p *v24.Extensions, m *ExtensionsMode
 	} else {
 		m.Kong = nil
 	}
-	if p.Composer != nil {
-		var nm ComposerModel
-		diags.Append(flattenComposer(ctx, p.Composer, &nm)...)
-		m.Composer = &nm
+	if p.Lua != nil {
+		var nm LuaModel
+		diags.Append(flattenLua(ctx, p.Lua, &nm)...)
+		m.Lua = &nm
 	} else {
-		m.Composer = nil
+		m.Lua = nil
+	}
+	if p.DynamicModule != nil {
+		var nm DynamicModuleModel
+		diags.Append(flattenDynamicModule(ctx, p.DynamicModule, &nm)...)
+		m.DynamicModule = &nm
+	} else {
+		m.DynamicModule = nil
 	}
 	return diags
 }
@@ -9495,20 +9508,20 @@ func flattenKong(ctx context.Context, p *v24.Kong, m *KongModel) diag.Diagnostic
 	return diags
 }
 
-// ComposerModel is the Terraform model for Composer.
-type ComposerModel struct {
-	Plugins []Composer_PluginModel `tfsdk:"plugins"`
+// LuaModel is the Terraform model for Lua.
+type LuaModel struct {
+	Plugins []Lua_PluginModel `tfsdk:"plugins"`
 }
 
-// expandComposer converts the Terraform model into a Composer proto.
-func expandComposer(ctx context.Context, m *ComposerModel) (*v24.Composer, diag.Diagnostics) {
+// expandLua converts the Terraform model into a Lua proto.
+func expandLua(ctx context.Context, m *LuaModel) (*v24.Lua, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if m == nil {
 		return nil, diags
 	}
-	out := &v24.Composer{}
+	out := &v24.Lua{}
 	for i := range m.Plugins {
-		ev, d := expandComposer_Plugin(ctx, &m.Plugins[i])
+		ev, d := expandLua_Plugin(ctx, &m.Plugins[i])
 		diags.Append(d...)
 		if ev != nil {
 			out.Plugins = append(out.Plugins, ev)
@@ -9517,13 +9530,47 @@ func expandComposer(ctx context.Context, m *ComposerModel) (*v24.Composer, diag.
 	return out, diags
 }
 
-// flattenComposer writes a Composer proto into the Terraform model.
-func flattenComposer(ctx context.Context, p *v24.Composer, m *ComposerModel) diag.Diagnostics {
+// flattenLua writes a Lua proto into the Terraform model.
+func flattenLua(ctx context.Context, p *v24.Lua, m *LuaModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 	m.Plugins = nil
 	for _, e := range p.Plugins {
-		var em Composer_PluginModel
-		diags.Append(flattenComposer_Plugin(ctx, e, &em)...)
+		var em Lua_PluginModel
+		diags.Append(flattenLua_Plugin(ctx, e, &em)...)
+		m.Plugins = append(m.Plugins, em)
+	}
+	return diags
+}
+
+// DynamicModuleModel is the Terraform model for DynamicModule.
+type DynamicModuleModel struct {
+	Plugins []DynamicModule_PluginModel `tfsdk:"plugins"`
+}
+
+// expandDynamicModule converts the Terraform model into a DynamicModule proto.
+func expandDynamicModule(ctx context.Context, m *DynamicModuleModel) (*v24.DynamicModule, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	if m == nil {
+		return nil, diags
+	}
+	out := &v24.DynamicModule{}
+	for i := range m.Plugins {
+		ev, d := expandDynamicModule_Plugin(ctx, &m.Plugins[i])
+		diags.Append(d...)
+		if ev != nil {
+			out.Plugins = append(out.Plugins, ev)
+		}
+	}
+	return out, diags
+}
+
+// flattenDynamicModule writes a DynamicModule proto into the Terraform model.
+func flattenDynamicModule(ctx context.Context, p *v24.DynamicModule, m *DynamicModuleModel) diag.Diagnostics {
+	var diags diag.Diagnostics
+	m.Plugins = nil
+	for _, e := range p.Plugins {
+		var em DynamicModule_PluginModel
+		diags.Append(flattenDynamicModule_Plugin(ctx, e, &em)...)
 		m.Plugins = append(m.Plugins, em)
 	}
 	return diags
@@ -12058,45 +12105,79 @@ func flattenKong_Plugins(ctx context.Context, p *v24.Kong_Plugins, m *Kong_Plugi
 	return diags
 }
 
-// Composer_PluginModel is the Terraform model for Composer_Plugin.
-type Composer_PluginModel struct {
-	Name     types.String                       `tfsdk:"name"`
-	Priority types.Int64                        `tfsdk:"priority"`
-	Config   *Composer_Plugin_PluginConfigModel `tfsdk:"config"`
-	Url      types.String                       `tfsdk:"url"`
+// Lua_PluginModel is the Terraform model for Lua_Plugin.
+type Lua_PluginModel struct {
+	Name       types.String `tfsdk:"name"`
+	Priority   types.Int64  `tfsdk:"priority"`
+	InlineCode types.String `tfsdk:"inline_code"`
 }
 
-// expandComposer_Plugin converts the Terraform model into a Composer_Plugin proto.
-func expandComposer_Plugin(ctx context.Context, m *Composer_PluginModel) (*v24.Composer_Plugin, diag.Diagnostics) {
+// expandLua_Plugin converts the Terraform model into a Lua_Plugin proto.
+func expandLua_Plugin(ctx context.Context, m *Lua_PluginModel) (*v24.Lua_Plugin, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if m == nil {
 		return nil, diags
 	}
-	out := &v24.Composer_Plugin{}
+	out := &v24.Lua_Plugin{}
 	out.Name = m.Name.ValueString()
 	out.Priority = int32(m.Priority.ValueInt64())
-	if m.Config != nil {
-		v, d := expandComposer_Plugin_PluginConfig(ctx, m.Config)
-		diags.Append(d...)
-		out.Config = v
-	}
-	out.Url = m.Url.ValueString()
+	out.InlineCode = m.InlineCode.ValueString()
 	return out, diags
 }
 
-// flattenComposer_Plugin writes a Composer_Plugin proto into the Terraform model.
-func flattenComposer_Plugin(ctx context.Context, p *v24.Composer_Plugin, m *Composer_PluginModel) diag.Diagnostics {
+// flattenLua_Plugin writes a Lua_Plugin proto into the Terraform model.
+func flattenLua_Plugin(ctx context.Context, p *v24.Lua_Plugin, m *Lua_PluginModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 	m.Name = stringOrNull(p.Name)
 	m.Priority = types.Int64Value(int64(p.Priority))
-	if p.Config != nil {
-		var nm Composer_Plugin_PluginConfigModel
-		diags.Append(flattenComposer_Plugin_PluginConfig(ctx, p.Config, &nm)...)
-		m.Config = &nm
-	} else {
-		m.Config = nil
+	m.InlineCode = stringOrNull(p.InlineCode)
+	return diags
+}
+
+// DynamicModule_PluginModel is the Terraform model for DynamicModule_Plugin.
+type DynamicModule_PluginModel struct {
+	Module   types.String         `tfsdk:"module"`
+	Name     types.String         `tfsdk:"name"`
+	Priority types.Int64          `tfsdk:"priority"`
+	Config   jsontypes.Normalized `tfsdk:"config"`
+}
+
+// expandDynamicModule_Plugin converts the Terraform model into a DynamicModule_Plugin proto.
+func expandDynamicModule_Plugin(ctx context.Context, m *DynamicModule_PluginModel) (*v24.DynamicModule_Plugin, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	if m == nil {
+		return nil, diags
 	}
-	m.Url = stringOrNull(p.Url)
+	out := &v24.DynamicModule_Plugin{}
+	out.Module = m.Module.ValueString()
+	out.Name = m.Name.ValueString()
+	out.Priority = int32(m.Priority.ValueInt64())
+	if !m.Config.IsNull() && !m.Config.IsUnknown() {
+		sv := &structpb.Struct{}
+		if err := protojson.Unmarshal([]byte(m.Config.ValueString()), sv); err != nil {
+			diags.AddError("Invalid JSON for config", err.Error())
+		} else {
+			out.Config = sv
+		}
+	}
+	return out, diags
+}
+
+// flattenDynamicModule_Plugin writes a DynamicModule_Plugin proto into the Terraform model.
+func flattenDynamicModule_Plugin(ctx context.Context, p *v24.DynamicModule_Plugin, m *DynamicModule_PluginModel) diag.Diagnostics {
+	var diags diag.Diagnostics
+	m.Module = stringOrNull(p.Module)
+	m.Name = stringOrNull(p.Name)
+	m.Priority = types.Int64Value(int64(p.Priority))
+	if p.Config != nil {
+		if b, err := protojson.Marshal(p.Config); err != nil {
+			diags.AddError("Unable to encode config", err.Error())
+		} else {
+			m.Config = jsontypes.NewNormalizedValue(string(b))
+		}
+	} else {
+		m.Config = jsontypes.NewNormalizedNull()
+	}
 	return diags
 }
 
@@ -14838,62 +14919,6 @@ func expandKong_Plugins_PluginSource(ctx context.Context, m *Kong_Plugins_Plugin
 func flattenKong_Plugins_PluginSource(ctx context.Context, p *v24.Kong_Plugins_PluginSource, m *Kong_Plugins_PluginSourceModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 	m.ConfigMap = stringOrNull(p.ConfigMap)
-	return diags
-}
-
-// Composer_Plugin_PluginConfigModel is the Terraform model for Composer_Plugin_PluginConfig.
-type Composer_Plugin_PluginConfigModel struct {
-	Inline    jsontypes.Normalized `tfsdk:"inline"`
-	Secret    types.String         `tfsdk:"secret"`
-	ConfigMap types.String         `tfsdk:"config_map"`
-}
-
-// expandComposer_Plugin_PluginConfig converts the Terraform model into a Composer_Plugin_PluginConfig proto.
-func expandComposer_Plugin_PluginConfig(ctx context.Context, m *Composer_Plugin_PluginConfigModel) (*v24.Composer_Plugin_PluginConfig, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	if m == nil {
-		return nil, diags
-	}
-	out := &v24.Composer_Plugin_PluginConfig{}
-	if !m.Inline.IsNull() && !m.Inline.IsUnknown() {
-		sv := &structpb.Struct{}
-		if err := protojson.Unmarshal([]byte(m.Inline.ValueString()), sv); err != nil {
-			diags.AddError("Invalid JSON for inline", err.Error())
-		} else {
-			out.Source = &v24.Composer_Plugin_PluginConfig_Inline{Inline: sv}
-		}
-	}
-	if !m.Secret.IsNull() && !m.Secret.IsUnknown() {
-		out.Source = &v24.Composer_Plugin_PluginConfig_Secret{Secret: m.Secret.ValueString()}
-	}
-	if !m.ConfigMap.IsNull() && !m.ConfigMap.IsUnknown() {
-		out.Source = &v24.Composer_Plugin_PluginConfig_ConfigMap{ConfigMap: m.ConfigMap.ValueString()}
-	}
-	return out, diags
-}
-
-// flattenComposer_Plugin_PluginConfig writes a Composer_Plugin_PluginConfig proto into the Terraform model.
-func flattenComposer_Plugin_PluginConfig(ctx context.Context, p *v24.Composer_Plugin_PluginConfig, m *Composer_Plugin_PluginConfigModel) diag.Diagnostics {
-	var diags diag.Diagnostics
-	if w, ok := p.Source.(*v24.Composer_Plugin_PluginConfig_Inline); ok {
-		if b, err := protojson.Marshal(w.Inline); err != nil {
-			diags.AddError("Unable to encode inline", err.Error())
-		} else {
-			m.Inline = jsontypes.NewNormalizedValue(string(b))
-		}
-	} else {
-		m.Inline = jsontypes.NewNormalizedNull()
-	}
-	if w, ok := p.Source.(*v24.Composer_Plugin_PluginConfig_Secret); ok {
-		m.Secret = stringOrNull(w.Secret)
-	} else {
-		m.Secret = types.StringNull()
-	}
-	if w, ok := p.Source.(*v24.Composer_Plugin_PluginConfig_ConfigMap); ok {
-		m.ConfigMap = stringOrNull(w.ConfigMap)
-	} else {
-		m.ConfigMap = types.StringNull()
-	}
 	return diags
 }
 

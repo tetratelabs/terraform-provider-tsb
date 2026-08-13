@@ -198,8 +198,8 @@ github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO
 github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
 github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu7U=
 github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
-github.com/tetrateio/tetrate v0.0.0-20260807140910-c9291b4eab25 h1:k2XX7PwqXzYUN0ZiDNR47EuEd0Fh0fFX4tJHggQTYI8=
-github.com/tetrateio/tetrate v0.0.0-20260807140910-c9291b4eab25/go.mod h1:SnLgMk8pcbp54qMaNN9Yck7LTUOEroF3eXDpc3sUsas=
+github.com/tetrateio/tetrate v0.0.0-20260813074402-d83bfbd29b1e h1:HOvF4Fk2r/Ye3D+Wa8Krq4Ddxtgi7Zx/eY6kNgblQHY=
+github.com/tetrateio/tetrate v0.0.0-20260813074402-d83bfbd29b1e/go.mod h1:3xMVjFJnhBqrJDToC9bmafgC2mMUCAd3tO/8YUD3r1M=
 github.com/tetratelabs/multierror v1.1.1 h1:84JfJvfmnYC5y4877Ag3c4PkCUmQwq6sGI6iRfBATKI=
 github.com/tetratelabs/multierror v1.1.1/go.mod h1:hAyQ/XifPOPdb0x3GsowbjsjCPgT9Fsxjety9TxmuGY=
 github.com/tetratelabs/telemetry v0.8.2 h1:VXwSVpfX1yRMo6UdhsLP80GuPzavVWuoJrVM+2lMOSk=

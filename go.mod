@@ -7,7 +7,7 @@ require (
 	github.com/hashicorp/terraform-plugin-framework v1.19.0
 	github.com/hashicorp/terraform-plugin-framework-jsontypes v0.2.0
 	github.com/hashicorp/terraform-plugin-go v0.31.0
-	github.com/tetrateio/tetrate v0.0.0-20260807140910-c9291b4eab25
+	github.com/tetrateio/tetrate v0.0.0-20260813074402-d83bfbd29b1e
 	google.golang.org/genproto/googleapis/api v0.0.0-20260630182238-925bb5da69e7
 	google.golang.org/grpc v1.82.1
 	google.golang.org/protobuf v1.36.11

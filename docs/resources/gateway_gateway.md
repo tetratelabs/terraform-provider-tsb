@@ -205,38 +205,29 @@ Optional:
 
 Optional:
 
-- `composer` (Attributes) Extend using Composer. Composer is a way to extend TSB functionality by using Tetrate's provided plugins missing in Envoy or by writing your own custom code. It supports both Lua and Golang. Refer to HowTos to understand how to use the same. (see [below for nested schema](#nestedatt--http--routing--rules--extensions--composer))
+- `dynamic_module` (Attributes) Extend using Envoy dynamic modules. DynamicModule runs plugins in the data path as Envoy dynamic modules: you name the module to load, the filter inside that module, and the configuration to pass to it. (see [below for nested schema](#nestedatt--http--routing--rules--extensions--dynamic_module))
 - `kong` (Attributes) Extend using Kong. The functionality provided by this extender will be added just before routing is done. This means all other listener filters configured on the gateway will be executed first such as RBAC (authorization policies) and then the request will be proeccessed by the `tetrate-kong-extender` sidecar. Please note that extending using Kong requires to run `tetrate-kong-extender` sidecar. Refer to HowTos to understand how to inject the same. (see [below for nested schema](#nestedatt--http--routing--rules--extensions--kong))
+- `lua` (Attributes) Extend using Lua. Lua runs custom Lua scripts in the data path using the native Envoy Lua HTTP filter, so it does not require any additional sidecar. (see [below for nested schema](#nestedatt--http--routing--rules--extensions--lua))
 
-<a id="nestedatt--http--routing--rules--extensions--composer"></a>
-### Nested Schema for `http.routing.rules.extensions.composer`
+<a id="nestedatt--http--routing--rules--extensions--dynamic_module"></a>
+### Nested Schema for `http.routing.rules.extensions.dynamic_module`
 
 Optional:
 
-- `plugins` (Attributes List) List of plugins. (see [below for nested schema](#nestedatt--http--routing--rules--extensions--composer--plugins))
+- `plugins` (Attributes List) List of plugins. (see [below for nested schema](#nestedatt--http--routing--rules--extensions--dynamic_module--plugins))
 
-<a id="nestedatt--http--routing--rules--extensions--composer--plugins"></a>
-### Nested Schema for `http.routing.rules.extensions.composer.plugins`
+<a id="nestedatt--http--routing--rules--extensions--dynamic_module--plugins"></a>
+### Nested Schema for `http.routing.rules.extensions.dynamic_module.plugins`
 
 Required:
 
-- `name` (String) Plugin name. This can be one of the [Tetrate built in plugins](https://docs.tetrate.io/service-bridge/) or a custom plugin. Tetrate built in plugins are bundled with TSB and can run directly. However providing `pluginSource` is required if this is a custom plugin.
+- `name` (String) Name of the filter to run within the dynamic module. For the `composer` module this is the name of any Built-on-Envoy Composer extension, e.g. `coraza-waf`, or `goplugin-loader` to load a custom Go plugin named by the `config`. The `module` and `name` pair identifies the plugin: two plugins on the same server or route must not repeat the same combination. The one exception is the `goplugin-loader` filter, which loads a different custom plugin per `config`, so there its `config.name` and `config.url` identify the plugin too.
 
 Optional:
 
-- `config` (Attributes) Configuration for this plugin (Optional). (see [below for nested schema](#nestedatt--http--routing--rules--extensions--composer--plugins--config))
-- `priority` (Number) Priority to be given to this plugin (Optional). Priority decides the order of execution of plugins. For example. Plugin P1(priority=10) will be executed before Plugin P2(priority=100).
-- `url` (String) Optional reference to a custom plugin. This url will be used to load the custom plugin binary. This is required if this is a custom plugin and can be empty for Tetrate built in plugins. Only OCI registry urls are supported for now. For example: oci://my-registry.io/my-repo/my-plugin:latest
-
-<a id="nestedatt--http--routing--rules--extensions--composer--plugins--config"></a>
-### Nested Schema for `http.routing.rules.extensions.composer.plugins.config`
-
-Optional:
-
-- `config_map` (String) Obtain plugin config from the specified kubernetes configMap. Ensure the configMap has a key "config" having values in the `yaml` format. The configMap must be present in the same namespace as the gateway install. The following is an example of a configMap which contains a valid config for tetrate's response-transformer plugin. ```yaml apiVersion: v1 data:   config: |     headersToAdd:     - key: "example-header"       value: "example-value"     headersToRemove:     - "example-header-to-remove"     bodyToSet: "the response is mutated!" kind: ConfigMap metadata:   name: response-transformer-config   namespace: gw-install-namespace type: Opaque ``` In case the configMap cannot be loaded (not found, bad format, schema validation failure or any other issue reading it), the config will be rejected by the `tetrate-composer` sidecar. NOT IMPLEMENTED.
-- `inline` (String) Provide plugin config inline in the `yaml` format. The following is an example of a valid config for tetrate's response-transformer plugin. ```yaml inline:   headersToAdd:   - key: "example-header"     value: "example-value"   headersToRemove:   - "example-header-to-remove"   bodyToSet: "the response is mutated!" ``` If the config fails plugin's schema validation, the `tetrate-composer` sidecar will reject it.
-- `secret` (String) Obtain plugin config from the specified kubernetes secret. Please ensure the secret has a key "config" having values in the `yaml` format. The secret must be present in the same namespace as the gateway install. The following is an example of a secret which contains a valid config for tetrate's response-transformer plugin. ```yaml apiVersion: v1 data:   config: YWRkOgogIGpzb246CiAgLSBleGFtcGxl kind: Secret metadata:   name: response-transformer-config   namespace: gw-install-namespace type: Opaque ``` In case the secret cannot be loaded (not found, bad format, schema validation failure or any other issue reading it), the config will be rejected by the `tetrate-composer` sidecar. NOT IMPLEMENTED.
-
+- `config` (String) Configuration for this plugin (Optional). The config is passed to the filter as-is, so its schema is defined by the filter itself. The following is an example of a valid config for the `coraza-waf` extension of the `composer` module: ```yaml config:   directives:   - "SecRuleEngine On"   mode: "FULL" ``` If the config fails the filter's own schema validation, it is rejected by the dynamic module at runtime. The `goplugin-loader` filter of the `composer` module is the one config XCP looks inside, because the plugin it loads is named by the config rather than by `name`. It is required there and takes the following shape: ```yaml config:   # Name of the custom plugin to load. Required.   name: my-plugin   # Url of the custom plugin binary. Required. Only OCI registry or local   # file urls are supported for now, e.g.   # oci://my-registry.io/my-repo/my-plugin:latest or file:///plugins/my-plugin.so.   url: oci://my-registry.io/my-repo/my-plugin:latest   # Configuration handed to the custom plugin itself. Optional, and must be   # an object when set: its keys belong to the custom plugin, so XCP passes   # it on untouched but rejects a scalar or a list here.   config:     some_key: some_value ```
+- `module` (String) Name of the Envoy dynamic module to load (Optional). Defaults to `composer`, the Tetrate-provided module. Every extension of the Built-on-Envoy Composer is supported natively by that module, see https://github.com/tetratelabs/built-on-envoy/tree/main/extensions/composer
+- `priority` (Number) Priority to be given to this plugin (Optional). Priority decides the order of the extension in the filter chain. In the request path, the lower the priority number, the earlier the plugin will be executed. In the response path, the lower the priority number, the later the plugin will be executed.
 
 
 
@@ -276,6 +267,27 @@ Required:
 
 - `config_map` (String) Kubernetes ConfigMap containing the plugin files. The configMap must be present in same namespace as the gateway install. To create this configmap in the gateway install namespace, run: ```yaml kubectl create configmap my-plugin --from-file=./my-plugin-dir` -n {gw-install-namespace} ``` and use the name `my-plugin` here. In case the configMap cannot be loaded (not found, bad format or any other issue reading it), the custom plugin will not be initialised and the config will be rejected by the `tetrate-kong-extender` sidecar.
 
+
+
+
+<a id="nestedatt--http--routing--rules--extensions--lua"></a>
+### Nested Schema for `http.routing.rules.extensions.lua`
+
+Optional:
+
+- `plugins` (Attributes List) List of plugins. (see [below for nested schema](#nestedatt--http--routing--rules--extensions--lua--plugins))
+
+<a id="nestedatt--http--routing--rules--extensions--lua--plugins"></a>
+### Nested Schema for `http.routing.rules.extensions.lua.plugins`
+
+Required:
+
+- `inline_code` (String) The inline Lua source code to run. The script follows the same contract as the native Envoy Lua HTTP filter, i.e. it may define `envoy_on_request(handle)` and/or `envoy_on_response(handle)` global functions.
+- `name` (String) Plugin name. A unique name identifying this Lua plugin. It must be unique among all Lua plugins configured on the same server or route, as it is used to name the generated HTTP filter entry and the Lua source-code key.
+
+Optional:
+
+- `priority` (Number) Priority to be given to this plugin (Optional). Priority decides the order of the extension in the filter chain. In the request path, the lower the priority number, the earlier the plugin will be executed. In the response path, the lower the priority number, the later the plugin will be executed.
 
 
 
@@ -755,38 +767,29 @@ Optional:
 
 Optional:
 
-- `composer` (Attributes) Extend using Composer. Composer is a way to extend TSB functionality by using Tetrate's provided plugins missing in Envoy or by writing your own custom code. It supports both Lua and Golang. Refer to HowTos to understand how to use the same. (see [below for nested schema](#nestedatt--http--extensions--composer))
+- `dynamic_module` (Attributes) Extend using Envoy dynamic modules. DynamicModule runs plugins in the data path as Envoy dynamic modules: you name the module to load, the filter inside that module, and the configuration to pass to it. (see [below for nested schema](#nestedatt--http--extensions--dynamic_module))
 - `kong` (Attributes) Extend using Kong. The functionality provided by this extender will be added just before routing is done. This means all other listener filters configured on the gateway will be executed first such as RBAC (authorization policies) and then the request will be proeccessed by the `tetrate-kong-extender` sidecar. Please note that extending using Kong requires to run `tetrate-kong-extender` sidecar. Refer to HowTos to understand how to inject the same. (see [below for nested schema](#nestedatt--http--extensions--kong))
+- `lua` (Attributes) Extend using Lua. Lua runs custom Lua scripts in the data path using the native Envoy Lua HTTP filter, so it does not require any additional sidecar. (see [below for nested schema](#nestedatt--http--extensions--lua))
 
-<a id="nestedatt--http--extensions--composer"></a>
-### Nested Schema for `http.extensions.composer`
+<a id="nestedatt--http--extensions--dynamic_module"></a>
+### Nested Schema for `http.extensions.dynamic_module`
 
 Optional:
 
-- `plugins` (Attributes List) List of plugins. (see [below for nested schema](#nestedatt--http--extensions--composer--plugins))
+- `plugins` (Attributes List) List of plugins. (see [below for nested schema](#nestedatt--http--extensions--dynamic_module--plugins))
 
-<a id="nestedatt--http--extensions--composer--plugins"></a>
-### Nested Schema for `http.extensions.composer.plugins`
+<a id="nestedatt--http--extensions--dynamic_module--plugins"></a>
+### Nested Schema for `http.extensions.dynamic_module.plugins`
 
 Required:
 
-- `name` (String) Plugin name. This can be one of the [Tetrate built in plugins](https://docs.tetrate.io/service-bridge/) or a custom plugin. Tetrate built in plugins are bundled with TSB and can run directly. However providing `pluginSource` is required if this is a custom plugin.
+- `name` (String) Name of the filter to run within the dynamic module. For the `composer` module this is the name of any Built-on-Envoy Composer extension, e.g. `coraza-waf`, or `goplugin-loader` to load a custom Go plugin named by the `config`. The `module` and `name` pair identifies the plugin: two plugins on the same server or route must not repeat the same combination. The one exception is the `goplugin-loader` filter, which loads a different custom plugin per `config`, so there its `config.name` and `config.url` identify the plugin too.
 
 Optional:
 
-- `config` (Attributes) Configuration for this plugin (Optional). (see [below for nested schema](#nestedatt--http--extensions--composer--plugins--config))
-- `priority` (Number) Priority to be given to this plugin (Optional). Priority decides the order of execution of plugins. For example. Plugin P1(priority=10) will be executed before Plugin P2(priority=100).
-- `url` (String) Optional reference to a custom plugin. This url will be used to load the custom plugin binary. This is required if this is a custom plugin and can be empty for Tetrate built in plugins. Only OCI registry urls are supported for now. For example: oci://my-registry.io/my-repo/my-plugin:latest
-
-<a id="nestedatt--http--extensions--composer--plugins--config"></a>
-### Nested Schema for `http.extensions.composer.plugins.config`
-
-Optional:
-
-- `config_map` (String) Obtain plugin config from the specified kubernetes configMap. Ensure the configMap has a key "config" having values in the `yaml` format. The configMap must be present in the same namespace as the gateway install. The following is an example of a configMap which contains a valid config for tetrate's response-transformer plugin. ```yaml apiVersion: v1 data:   config: |     headersToAdd:     - key: "example-header"       value: "example-value"     headersToRemove:     - "example-header-to-remove"     bodyToSet: "the response is mutated!" kind: ConfigMap metadata:   name: response-transformer-config   namespace: gw-install-namespace type: Opaque ``` In case the configMap cannot be loaded (not found, bad format, schema validation failure or any other issue reading it), the config will be rejected by the `tetrate-composer` sidecar. NOT IMPLEMENTED.
-- `inline` (String) Provide plugin config inline in the `yaml` format. The following is an example of a valid config for tetrate's response-transformer plugin. ```yaml inline:   headersToAdd:   - key: "example-header"     value: "example-value"   headersToRemove:   - "example-header-to-remove"   bodyToSet: "the response is mutated!" ``` If the config fails plugin's schema validation, the `tetrate-composer` sidecar will reject it.
-- `secret` (String) Obtain plugin config from the specified kubernetes secret. Please ensure the secret has a key "config" having values in the `yaml` format. The secret must be present in the same namespace as the gateway install. The following is an example of a secret which contains a valid config for tetrate's response-transformer plugin. ```yaml apiVersion: v1 data:   config: YWRkOgogIGpzb246CiAgLSBleGFtcGxl kind: Secret metadata:   name: response-transformer-config   namespace: gw-install-namespace type: Opaque ``` In case the secret cannot be loaded (not found, bad format, schema validation failure or any other issue reading it), the config will be rejected by the `tetrate-composer` sidecar. NOT IMPLEMENTED.
-
+- `config` (String) Configuration for this plugin (Optional). The config is passed to the filter as-is, so its schema is defined by the filter itself. The following is an example of a valid config for the `coraza-waf` extension of the `composer` module: ```yaml config:   directives:   - "SecRuleEngine On"   mode: "FULL" ``` If the config fails the filter's own schema validation, it is rejected by the dynamic module at runtime. The `goplugin-loader` filter of the `composer` module is the one config XCP looks inside, because the plugin it loads is named by the config rather than by `name`. It is required there and takes the following shape: ```yaml config:   # Name of the custom plugin to load. Required.   name: my-plugin   # Url of the custom plugin binary. Required. Only OCI registry or local   # file urls are supported for now, e.g.   # oci://my-registry.io/my-repo/my-plugin:latest or file:///plugins/my-plugin.so.   url: oci://my-registry.io/my-repo/my-plugin:latest   # Configuration handed to the custom plugin itself. Optional, and must be   # an object when set: its keys belong to the custom plugin, so XCP passes   # it on untouched but rejects a scalar or a list here.   config:     some_key: some_value ```
+- `module` (String) Name of the Envoy dynamic module to load (Optional). Defaults to `composer`, the Tetrate-provided module. Every extension of the Built-on-Envoy Composer is supported natively by that module, see https://github.com/tetratelabs/built-on-envoy/tree/main/extensions/composer
+- `priority` (Number) Priority to be given to this plugin (Optional). Priority decides the order of the extension in the filter chain. In the request path, the lower the priority number, the earlier the plugin will be executed. In the response path, the lower the priority number, the later the plugin will be executed.
 
 
 
@@ -826,6 +829,27 @@ Required:
 
 - `config_map` (String) Kubernetes ConfigMap containing the plugin files. The configMap must be present in same namespace as the gateway install. To create this configmap in the gateway install namespace, run: ```yaml kubectl create configmap my-plugin --from-file=./my-plugin-dir` -n {gw-install-namespace} ``` and use the name `my-plugin` here. In case the configMap cannot be loaded (not found, bad format or any other issue reading it), the custom plugin will not be initialised and the config will be rejected by the `tetrate-kong-extender` sidecar.
 
+
+
+
+<a id="nestedatt--http--extensions--lua"></a>
+### Nested Schema for `http.extensions.lua`
+
+Optional:
+
+- `plugins` (Attributes List) List of plugins. (see [below for nested schema](#nestedatt--http--extensions--lua--plugins))
+
+<a id="nestedatt--http--extensions--lua--plugins"></a>
+### Nested Schema for `http.extensions.lua.plugins`
+
+Required:
+
+- `inline_code` (String) The inline Lua source code to run. The script follows the same contract as the native Envoy Lua HTTP filter, i.e. it may define `envoy_on_request(handle)` and/or `envoy_on_response(handle)` global functions.
+- `name` (String) Plugin name. A unique name identifying this Lua plugin. It must be unique among all Lua plugins configured on the same server or route, as it is used to name the generated HTTP filter entry and the Lua source-code key.
+
+Optional:
+
+- `priority` (Number) Priority to be given to this plugin (Optional). Priority decides the order of the extension in the filter chain. In the request path, the lower the priority number, the earlier the plugin will be executed. In the response path, the lower the priority number, the later the plugin will be executed.
 
 
 
