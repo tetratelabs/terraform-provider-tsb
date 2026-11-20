@@ -95,6 +95,11 @@ func (g *generator) emitResource(f *j.File, r resourceInfo) error {
 		createReqFields[j.Id("Name")] = j.Id("plan").Dot("Name").Dot("ValueString").Call()
 	}
 	createReqFields[j.Id(r.CreateMsgField)] = j.Id("msg")
+	// Request key pairs as JWK: TSB defaults to PEM, but the operators consume
+	// service account keys in JWK format.
+	if fld, ok := r.CreateReqGoType.FieldByName("KeyEncoding"); ok && fld.Type.Name() == "ServiceAccount_KeyPair_Encoding" {
+		createReqFields[j.Id("KeyEncoding")] = j.Qual(fld.Type.PkgPath(), "ServiceAccount_KeyPair_JWK")
+	}
 	f.Func().Params(j.Id(recv).Op("*").Id(typeName)).Id("Create").
 		Params(j.Id("ctx").Qual(pkgContext, "Context"), j.Id("req").Qual(pkgResource, "CreateRequest"), j.Id("resp").Op("*").Qual(pkgResource, "CreateResponse")).
 		Block(
