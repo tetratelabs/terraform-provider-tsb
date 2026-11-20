@@ -342,12 +342,14 @@ Optional:
 
 Required:
 
-- `name` (String) A friendly name to identify the binding.
+- `name` (String) A name identifying the rule. Names must be unique within a server. For `DENY` and `AUDIT` rules they must also be unique across servers that share a filter chain, among rules with the same action. Plaintext servers on the same port share a chain, because Istio serves them from one listener. For `DENY` and `AUDIT` rules the proxy reports this name as the effective policy ID. It appears in the access log record, so the record shows which rule matched. Name an `AUDIT` rule after what it watches.
 
 Optional:
 
+- `action` (String) What happens to a request matching this rule. If unset, the request is permitted. Possible values: ALLOW, DENY, AUDIT.
 - `from` (Attributes List) Subjects configure the actors (end users, other services)  that are allowed to access the target resource. (see [below for nested schema](#nestedatt--external_servers--authorization--local--rules--from))
-- `to` (Attributes List) A set of HTTP rules that need to be satisfied by the HTTP requests to get access to the target resource. (see [below for nested schema](#nestedatt--external_servers--authorization--local--rules--to))
+- `to` (Attributes List) A set of HTTP rules that need to be satisfied by the HTTP requests to get access to the target resource. A rule that states neither `from`, `to` nor `when` matches every request the server handles. That is how an `AUDIT` rule records a whole server, and how a `DENY` rule closes one. An `ALLOW` rule must say what it permits. (see [below for nested schema](#nestedatt--external_servers--authorization--local--rules--to))
+- `when` (Attributes List) Conditions that must all hold for the rule to match. They apply in addition to `from` and `to`. XCP scopes every rule to the server that declares it. It does this by adding that server's host and port to the rule. Conditions are combined with that scope, so a condition can narrow a rule within its server but cannot widen it to other servers. This matters for conditions on `request.headers[:authority]` and `destination.port`. On a server with a specific hostname, a condition naming a different host never matches. Such requests do not reach that server anyway. On a server whose hostname is `*`, the condition works as written. (see [below for nested schema](#nestedatt--external_servers--authorization--local--rules--when))
 
 <a id="nestedatt--external_servers--authorization--local--rules--from"></a>
 ### Nested Schema for `external_servers.authorization.local.rules.from`
@@ -373,7 +375,22 @@ Optional:
 Optional:
 
 - `methods` (List of String) The HTTP methods that are allowed by this rule. E.g. ["GET", "HEAD"].
-- `paths` (List of String) The request path where the request is made against. E.g. ["/accounts"].
+- `not_methods` (List of String) Methods that must NOT match for this rule to apply.
+- `not_paths` (List of String) Paths that must NOT match for this rule to apply. Same matching as `paths`.
+- `paths` (List of String) The request path where the request is made against. E.g. ["/accounts"]. Supports exact match, prefix match with a trailing `*` and suffix match with a leading `*`. A single `*` matches any path.
+
+
+<a id="nestedatt--external_servers--authorization--local--rules--when"></a>
+### Nested Schema for `external_servers.authorization.local.rules.when`
+
+Required:
+
+- `key` (String) The attribute to match, for example `request.headers[x-api-key]`, `request.auth.claims[group]`, `connection.sni` or `source.ip`. HTTP/2 pseudo headers are addressable, so `request.headers[:authority]` and `request.headers[:path]` work, and unlike `to.paths` the latter includes the query string.
+
+Optional:
+
+- `not_values` (List of String) The condition holds only when the attribute matches none of these values. Same matching as `values`. A single `*` therefore requires the attribute to be absent.
+- `values` (List of String) The condition holds when the attribute matches any of these values. Supports exact match, prefix match with a trailing `*`, suffix match with a leading `*`, and a single `*` which matches any value, i.e. requires the attribute to be present.
 
 
 
@@ -738,6 +755,7 @@ Optional:
 
 Optional:
 
+- `alpn_protocols` (List of String) List of ALPN protocols advertised by the server during the TLS handshake, in order of preference. When set, this list replaces the ALPN protocols that would otherwise be advertised for this server (`h2` and `http/1.1` for HTTP servers), so it can be used to stop advertising HTTP/2 to clients that negotiate it but cannot use it. Common values are "h2" and "http/1.1"; the gateway must be able to serve whatever is advertised, since a client may negotiate any protocol in the list. This only applies to servers that terminate TLS, i.e. servers whose `mode` is not DISABLED. It is ignored for TLS passthrough servers, which never terminate the handshake, and has no effect when left empty.
 - `cipher_suites` (List of String) List of cipher suites to be used for TLS connections. Examples of cipher suites: - "TLS_RSA_WITH_AES_256_CBC_SHA" - "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256" - "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384" - "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256" - "TLS_RSA_WITH_3DES_EDE_CBC_SHA"
 - `files` (Attributes) Load the keys and certificates from files accessible to the ingress gateway workload. Only one of secretName or files must be specified. (see [below for nested schema](#nestedatt--external_servers--tls--files))
 - `max_protocol_version` (String) Set the maximum supported TLS protocol version. Valid options: TLS_AUTO, TLSV1_0, TLSV1_1, TLSV1_2, TLSV1_3. Possible values: TLS_AUTO, TLSV1_0, TLSV1_1, TLSV1_2, TLSV1_3.
@@ -1014,12 +1032,14 @@ Optional:
 
 Required:
 
-- `name` (String) A friendly name to identify the binding.
+- `name` (String) A name identifying the rule. Names must be unique within a server. For `DENY` and `AUDIT` rules they must also be unique across servers that share a filter chain, among rules with the same action. Plaintext servers on the same port share a chain, because Istio serves them from one listener. For `DENY` and `AUDIT` rules the proxy reports this name as the effective policy ID. It appears in the access log record, so the record shows which rule matched. Name an `AUDIT` rule after what it watches.
 
 Optional:
 
+- `action` (String) What happens to a request matching this rule. If unset, the request is permitted. Possible values: ALLOW, DENY, AUDIT.
 - `from` (Attributes List) Subjects configure the actors (end users, other services)  that are allowed to access the target resource. (see [below for nested schema](#nestedatt--internal_servers--authorization--local--rules--from))
-- `to` (Attributes List) A set of HTTP rules that need to be satisfied by the HTTP requests to get access to the target resource. (see [below for nested schema](#nestedatt--internal_servers--authorization--local--rules--to))
+- `to` (Attributes List) A set of HTTP rules that need to be satisfied by the HTTP requests to get access to the target resource. A rule that states neither `from`, `to` nor `when` matches every request the server handles. That is how an `AUDIT` rule records a whole server, and how a `DENY` rule closes one. An `ALLOW` rule must say what it permits. (see [below for nested schema](#nestedatt--internal_servers--authorization--local--rules--to))
+- `when` (Attributes List) Conditions that must all hold for the rule to match. They apply in addition to `from` and `to`. XCP scopes every rule to the server that declares it. It does this by adding that server's host and port to the rule. Conditions are combined with that scope, so a condition can narrow a rule within its server but cannot widen it to other servers. This matters for conditions on `request.headers[:authority]` and `destination.port`. On a server with a specific hostname, a condition naming a different host never matches. Such requests do not reach that server anyway. On a server whose hostname is `*`, the condition works as written. (see [below for nested schema](#nestedatt--internal_servers--authorization--local--rules--when))
 
 <a id="nestedatt--internal_servers--authorization--local--rules--from"></a>
 ### Nested Schema for `internal_servers.authorization.local.rules.from`
@@ -1045,7 +1065,22 @@ Optional:
 Optional:
 
 - `methods` (List of String) The HTTP methods that are allowed by this rule. E.g. ["GET", "HEAD"].
-- `paths` (List of String) The request path where the request is made against. E.g. ["/accounts"].
+- `not_methods` (List of String) Methods that must NOT match for this rule to apply.
+- `not_paths` (List of String) Paths that must NOT match for this rule to apply. Same matching as `paths`.
+- `paths` (List of String) The request path where the request is made against. E.g. ["/accounts"]. Supports exact match, prefix match with a trailing `*` and suffix match with a leading `*`. A single `*` matches any path.
+
+
+<a id="nestedatt--internal_servers--authorization--local--rules--when"></a>
+### Nested Schema for `internal_servers.authorization.local.rules.when`
+
+Required:
+
+- `key` (String) The attribute to match, for example `request.headers[x-api-key]`, `request.auth.claims[group]`, `connection.sni` or `source.ip`. HTTP/2 pseudo headers are addressable, so `request.headers[:authority]` and `request.headers[:path]` work, and unlike `to.paths` the latter includes the query string.
+
+Optional:
+
+- `not_values` (List of String) The condition holds only when the attribute matches none of these values. Same matching as `values`. A single `*` therefore requires the attribute to be absent.
+- `values` (List of String) The condition holds when the attribute matches any of these values. Supports exact match, prefix match with a trailing `*`, suffix match with a leading `*`, and a single `*` which matches any value, i.e. requires the attribute to be present.
 
 
 
@@ -1118,6 +1153,7 @@ Optional:
 
 Optional:
 
+- `alpn_protocols` (List of String) List of ALPN protocols advertised by the server during the TLS handshake, in order of preference. When set, this list replaces the ALPN protocols that would otherwise be advertised for this server (`h2` and `http/1.1` for HTTP servers), so it can be used to stop advertising HTTP/2 to clients that negotiate it but cannot use it. Common values are "h2" and "http/1.1"; the gateway must be able to serve whatever is advertised, since a client may negotiate any protocol in the list. This only applies to servers that terminate TLS, i.e. servers whose `mode` is not DISABLED. It is ignored for TLS passthrough servers, which never terminate the handshake, and has no effect when left empty.
 - `cipher_suites` (List of String) List of cipher suites to be used for TLS connections. Examples of cipher suites: - "TLS_RSA_WITH_AES_256_CBC_SHA" - "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256" - "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384" - "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256" - "TLS_RSA_WITH_3DES_EDE_CBC_SHA"
 - `files` (Attributes) Load the keys and certificates from files accessible to the ingress gateway workload. Only one of secretName or files must be specified. (see [below for nested schema](#nestedatt--tcp_external_servers--tls--files))
 - `max_protocol_version` (String) Set the maximum supported TLS protocol version. Valid options: TLS_AUTO, TLSV1_0, TLSV1_1, TLSV1_2, TLSV1_3. Possible values: TLS_AUTO, TLSV1_0, TLSV1_1, TLSV1_2, TLSV1_3.

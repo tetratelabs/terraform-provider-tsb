@@ -627,6 +627,7 @@ Required:
 Optional:
 
 - `components` (Attributes) The set of components that make up the control plane. Use this to override settings for individual components. These components assume the following secrets are present: oap-token and otel-token. (see [below for nested schema](#nestedatt--install_template--helm--spec--components))
+- `config_snapshot` (Attributes) Configure periodic snapshots of the control plane configuration received from the management plane, so that a rebuilt cluster can be installed from the snapshot while the management plane is unreachable. (see [below for nested schema](#nestedatt--install_template--helm--spec--config_snapshot))
 - `image_pull_secrets` (Attributes List) Pull secrets can be specified globally for all components, or defined into the `kubeSpec.serviceAccount` of every component if needed. In case both are defined, the most specific one (the one defined at the component) level is used. List of references to secrets in the same namespace to use for pulling any images in pods that reference this ServiceAccount. ImagePullSecrets are distinct from Secrets because Secrets can be mounted in the pod, but ImagePullSecrets are only accessed by the kubelet. More info: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#service_account-v1-core (see [below for nested schema](#nestedatt--install_template--helm--spec--image_pull_secrets))
 - `mesh_expansion` (Attributes) Configure mesh expansion to connect workloads external to Kubernetes to the mesh. (see [below for nested schema](#nestedatt--install_template--helm--spec--mesh_expansion))
 - `mesh_observability` (Attributes) Configure how the mesh should be observed, which observability functionalities should be enabled to observe your registered services in the mesh, and the store properties that TSB will use to persist application observability data like metrics, traces, logs. If omitted, a demo grade mesh observability setting will be configured for your convenience. (see [below for nested schema](#nestedatt--install_template--helm--spec--mesh_observability))
@@ -31303,6 +31304,19 @@ Optional:
 - `value` (Boolean) The bool value.
 
 
+
+
+<a id="nestedatt--install_template--helm--spec--config_snapshot"></a>
+### Nested Schema for `install_template.helm.spec.config_snapshot`
+
+Required:
+
+- `claim_name` (String) Name of a PersistentVolumeClaim in the control plane namespace where the snapshot is written to and restored from. The claim is not created by the operator, so the same volume can be handed to a rebuilt cluster.
+
+Optional:
+
+- `disable_restore` (Boolean) Disable restoring from the snapshot when the management plane is unreachable at install time. Snapshots are still taken.
+- `schedule` (String) Cron schedule for taking snapshots periodically. Defaults to hourly (`0 * * * *`). Snapshots can also be taken on demand with `tctl x controlplane-snapshot`.
 
 
 <a id="nestedatt--install_template--helm--spec--image_pull_secrets"></a>

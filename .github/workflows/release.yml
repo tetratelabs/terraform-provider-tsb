@@ -25,7 +25,10 @@ jobs:
       - name: Configure SSH Agent
         uses: webfactory/ssh-agent@v0.9.0
         with:
-          ssh-private-key: ${{ secrets.TETRATE_CI_SSH_PRIVATE_KEY }}
+          # Each key comment names its repo (git@github.com:tetrateio/<repo>.git) so ssh-agent maps deploy keys per repo.
+          ssh-private-key: |
+            ${{ secrets.TETRATE_CI_SSH_PRIVATE_KEY }}
+            ${{ secrets.XCP_CI_SSH_PRIVATE_KEY }}
       - name: Disable Strict Host Key Checking for SSH
         run: mkdir -p ~/.ssh && echo -e "\tStrictHostKeyChecking no" >> ~/.ssh/config && ssh-keyscan github.com >> ~/.ssh/known_hosts
       - name: Pull over SSH instead of HTTPS

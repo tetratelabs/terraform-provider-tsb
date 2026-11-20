@@ -127,12 +127,14 @@ Optional:
 
 Required:
 
-- `name` (String) A friendly name to identify the binding.
+- `name` (String) A name identifying the rule. Names must be unique within a server. For `DENY` and `AUDIT` rules they must also be unique across servers that share a filter chain, among rules with the same action. Plaintext servers on the same port share a chain, because Istio serves them from one listener. For `DENY` and `AUDIT` rules the proxy reports this name as the effective policy ID. It appears in the access log record, so the record shows which rule matched. Name an `AUDIT` rule after what it watches.
 
 Optional:
 
+- `action` (String) What happens to a request matching this rule. If unset, the request is permitted. Possible values: ALLOW, DENY, AUDIT.
 - `from` (Attributes List) Subjects configure the actors (end users, other services)  that are allowed to access the target resource. (see [below for nested schema](#nestedatt--authorization--from--http--local--rules--from))
-- `to` (Attributes List) A set of HTTP rules that need to be satisfied by the HTTP requests to get access to the target resource. (see [below for nested schema](#nestedatt--authorization--from--http--local--rules--to))
+- `to` (Attributes List) A set of HTTP rules that need to be satisfied by the HTTP requests to get access to the target resource. A rule that states neither `from`, `to` nor `when` matches every request the server handles. That is how an `AUDIT` rule records a whole server, and how a `DENY` rule closes one. An `ALLOW` rule must say what it permits. (see [below for nested schema](#nestedatt--authorization--from--http--local--rules--to))
+- `when` (Attributes List) Conditions that must all hold for the rule to match. They apply in addition to `from` and `to`. XCP scopes every rule to the server that declares it. It does this by adding that server's host and port to the rule. Conditions are combined with that scope, so a condition can narrow a rule within its server but cannot widen it to other servers. This matters for conditions on `request.headers[:authority]` and `destination.port`. On a server with a specific hostname, a condition naming a different host never matches. Such requests do not reach that server anyway. On a server whose hostname is `*`, the condition works as written. (see [below for nested schema](#nestedatt--authorization--from--http--local--rules--when))
 
 <a id="nestedatt--authorization--from--http--local--rules--from"></a>
 ### Nested Schema for `authorization.from.http.local.rules.from`
@@ -158,7 +160,22 @@ Optional:
 Optional:
 
 - `methods` (List of String) The HTTP methods that are allowed by this rule. E.g. ["GET", "HEAD"].
-- `paths` (List of String) The request path where the request is made against. E.g. ["/accounts"].
+- `not_methods` (List of String) Methods that must NOT match for this rule to apply.
+- `not_paths` (List of String) Paths that must NOT match for this rule to apply. Same matching as `paths`.
+- `paths` (List of String) The request path where the request is made against. E.g. ["/accounts"]. Supports exact match, prefix match with a trailing `*` and suffix match with a leading `*`. A single `*` matches any path.
+
+
+<a id="nestedatt--authorization--from--http--local--rules--when"></a>
+### Nested Schema for `authorization.from.http.local.rules.when`
+
+Required:
+
+- `key` (String) The attribute to match, for example `request.headers[x-api-key]`, `request.auth.claims[group]`, `connection.sni` or `source.ip`. HTTP/2 pseudo headers are addressable, so `request.headers[:authority]` and `request.headers[:path]` work, and unlike `to.paths` the latter includes the query string.
+
+Optional:
+
+- `not_values` (List of String) The condition holds only when the attribute matches none of these values. Same matching as `values`. A single `*` therefore requires the attribute to be absent.
+- `values` (List of String) The condition holds when the attribute matches any of these values. Supports exact match, prefix match with a trailing `*`, suffix match with a leading `*`, and a single `*` which matches any value, i.e. requires the attribute to be present.
 
 
 

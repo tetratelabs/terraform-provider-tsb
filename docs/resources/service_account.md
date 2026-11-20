@@ -28,4 +28,5 @@ description: |-
 ### Read-Only
 
 - `id` (String) Fully-qualified name of the ServiceAccount resource.
+- `key_management` (String) How the keys of the service account are managed. This is decided when it is created, supplying a public key makes the client the manager of its keys. Both TSB managed and client provided keys can still be manually added to a service account regardless of how it is managed. Possible values: TSB, CLIENT.
 - `keys` (String) Keys associated with the service account. A default key-pair is automatically created when the Service Account is created. Note that TSB does not store the private keys, so it is up to the client to store the returned private keys securely, as they are only returned once after creation. Additional keys can be added (and deleted) by using the corresponding key management APIs.
