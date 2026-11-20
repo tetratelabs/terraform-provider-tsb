@@ -14,6 +14,7 @@ func Groups() map[string]string {
 		"application_application":                "application",
 		"cluster":                                "",
 		"cluster_onboarding_config":              "",
+		"extension_ui_extension":                 "extension",
 		"extension_wasm_extension":               "extension",
 		"gateway_egress_gateway":                 "gateway",
 		"gateway_gateway":                        "gateway",

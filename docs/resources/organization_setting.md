@@ -24,6 +24,7 @@ description: |-
 
 - `default_security_setting` (Attributes) Security settings for all proxy workloads in this organization. This can be overridden at TenantSettings, WorkspaceSettings, or security group's SecuritySetting for specific cases. The override strategy used will be driven by the SecuritySetting propagation strategy. The default propagation strategy is `REPLACE`, in which a lower level SecuritySetting in the configuration hierarchy replaces a higher level SecuritySetting defined in the configuration hierarchy. For instance, a WorkspaceSettings defined SecuritySetting will replace any tenant or organization defined SecuritySetting. Proxy workloads without a specific security group will inherit these settings. If omitted, the following semantics apply: 1. Sidecars will accept connections from clients using Istio Mutual TLS as well as legacy clients using plaintext (i.e. any traffic not using Istio Mutual TLS authentication), i.e. authentication mode defaults to `OPTIONAL`. 2. No authorization will be performed, i.e., authorization mode defaults to `DISABLED`. (see [below for nested schema](#nestedatt--default_security_setting))
 - `default_traffic_setting` (Attributes) Traffic settings for all proxy workloads in this organization. This can be overridden at TenantSettings or WorkspaceSettings for specific cases. Proxy workloads without a specific traffic group will inherit these settings. If omitted, the following semantics apply: 1. Sidecars will be able to reach any service in the cluster, i.e. reachability mode defaults to `CLUSTER`. 2. Traffic to unknown destinations will be directly routed from the sidecar to the destination. (see [below for nested schema](#nestedatt--default_traffic_setting))
+- `deletion_protection_enabled` (Boolean) When set, prevents the resource from being deleted. In order to delete the resource this property needs to be set to `false` first.
 - `description` (String) A description of the resource.
 - `display_name` (String) User friendly name for the resource.
 - `failover_settings` (Attributes) Failover settings for all proxies connecting to a host exposed in this organization. Note that this is a server side setting. (see [below for nested schema](#nestedatt--failover_settings))
@@ -55,6 +56,7 @@ Optional:
 Optional:
 
 - `http` (Attributes) HTTP request authentication is used to configure authentication of origin/end-user credentials like JSON Web Token (JWT). It is highly recommended to set traffic authentication mode to REQUIRED so that it is transported only over mutual TLS (see [below for nested schema](#nestedatt--default_security_setting--authentication_settings--http))
+- `min_protocol_version` (String) The minimum TLS protocol version accepted on inbound connections that a proxy terminates TLS on, applied to every workload in the namespaces selected by this setting. Both data plane roles are covered: sidecars are configured through a generated `EnvoyFilter` on their inbound TLS-terminating filter chains, and the same value is a floor for every gateway server generated in those namespaces. A gateway server may set a stricter `minProtocolVersion` of its own, but a weaker one is raised to this value. Only TLS that the proxy terminates is affected, because a minimum protocol version is a property of a handshake the proxy itself performs. A gateway server in TLS passthrough mode never completes a handshake — it matches on SNI and forwards the encrypted bytes — so there is no version for it to enforce. Every version is honored by both roles. `TLSV1_0` and `TLSV1_1` sit below the TLS 1.2 Istio's mesh mutual TLS uses, so on sidecars they lower the floor rather than raise it, exactly as they do on a gateway server. Defaults to `TLS_AUTO`, which applies no floor and leaves the mesh-wide default in place. Note: sidecars in ambient mode are unaffected — the ambient data plane (ztunnel and waypoint HBONE) already negotiates TLS 1.3 exclusively and is not configurable. Gateways in ambient namespaces are still subject to the floor, because they terminate TLS like any other gateway. Possible values: TLS_AUTO, TLSV1_0, TLSV1_1, TLSV1_2, TLSV1_3.
 - `traffic_mode` (String) Traffic authentication mode is used to specify if mTLS or plaintext traffic is accepted. Possible values: UNSET, OPTIONAL, REQUIRED.
 
 <a id="nestedatt--default_security_setting--authentication_settings--http"></a>
@@ -311,12 +313,14 @@ Optional:
 
 Required:
 
-- `name` (String) A friendly name to identify the binding.
+- `name` (String) A name identifying the rule. Names must be unique within a server. For `DENY` and `AUDIT` rules they must also be unique across servers that share a filter chain, among rules with the same action. Plaintext servers on the same port share a chain, because Istio serves them from one listener. For `DENY` and `AUDIT` rules the proxy reports this name as the effective policy ID. It appears in the access log record, so the record shows which rule matched. Name an `AUDIT` rule after what it watches.
 
 Optional:
 
+- `action` (String) What happens to a request matching this rule. If unset, the request is permitted. Possible values: ALLOW, DENY, AUDIT.
 - `from` (Attributes List) Subjects configure the actors (end users, other services)  that are allowed to access the target resource. (see [below for nested schema](#nestedatt--default_security_setting--authorization--http--local--rules--from))
-- `to` (Attributes List) A set of HTTP rules that need to be satisfied by the HTTP requests to get access to the target resource. (see [below for nested schema](#nestedatt--default_security_setting--authorization--http--local--rules--to))
+- `to` (Attributes List) A set of HTTP rules that need to be satisfied by the HTTP requests to get access to the target resource. A rule that states neither `from`, `to` nor `when` matches every request the server handles. That is how an `AUDIT` rule records a whole server, and how a `DENY` rule closes one. An `ALLOW` rule must say what it permits. (see [below for nested schema](#nestedatt--default_security_setting--authorization--http--local--rules--to))
+- `when` (Attributes List) Conditions that must all hold for the rule to match. They apply in addition to `from` and `to`. XCP scopes every rule to the server that declares it. It does this by adding that server's host and port to the rule. Conditions are combined with that scope, so a condition can narrow a rule within its server but cannot widen it to other servers. This matters for conditions on `request.headers[:authority]` and `destination.port`. On a server with a specific hostname, a condition naming a different host never matches. Such requests do not reach that server anyway. On a server whose hostname is `*`, the condition works as written. (see [below for nested schema](#nestedatt--default_security_setting--authorization--http--local--rules--when))
 
 <a id="nestedatt--default_security_setting--authorization--http--local--rules--from"></a>
 ### Nested Schema for `default_security_setting.authorization.http.local.rules.from`
@@ -342,7 +346,22 @@ Optional:
 Optional:
 
 - `methods` (List of String) The HTTP methods that are allowed by this rule. E.g. ["GET", "HEAD"].
-- `paths` (List of String) The request path where the request is made against. E.g. ["/accounts"].
+- `not_methods` (List of String) Methods that must NOT match for this rule to apply.
+- `not_paths` (List of String) Paths that must NOT match for this rule to apply. Same matching as `paths`.
+- `paths` (List of String) The request path where the request is made against. E.g. ["/accounts"]. Supports exact match, prefix match with a trailing `*` and suffix match with a leading `*`. A single `*` matches any path.
+
+
+<a id="nestedatt--default_security_setting--authorization--http--local--rules--when"></a>
+### Nested Schema for `default_security_setting.authorization.http.local.rules.when`
+
+Required:
+
+- `key` (String) The attribute to match, for example `request.headers[x-api-key]`, `request.auth.claims[group]`, `connection.sni` or `source.ip`. HTTP/2 pseudo headers are addressable, so `request.headers[:authority]` and `request.headers[:path]` work, and unlike `to.paths` the latter includes the query string.
+
+Optional:
+
+- `not_values` (List of String) The condition holds only when the attribute matches none of these values. Same matching as `values`. A single `*` therefore requires the attribute to be absent.
+- `values` (List of String) The condition holds when the attribute matches any of these values. Supports exact match, prefix match with a trailing `*`, suffix match with a leading `*`, and a single `*` which matches any value, i.e. requires the attribute to be present.
 
 
 

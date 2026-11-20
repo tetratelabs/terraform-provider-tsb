@@ -49,6 +49,10 @@ func TestModelSchemaParity(t *testing.T) {
 		name:   "cluster_onboarding_config",
 		schema: v2.ClusterOnboardingConfigSchema(),
 	}, {
+		model:  reflect.TypeOf(ExtensionUIExtensionModel{}),
+		name:   "extension_ui_extension",
+		schema: v22.UIExtensionSchema(),
+	}, {
 		model:  reflect.TypeOf(ExtensionWasmExtensionModel{}),
 		name:   "extension_wasm_extension",
 		schema: v22.WasmExtensionSchema(),

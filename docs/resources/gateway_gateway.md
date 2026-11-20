@@ -146,6 +146,7 @@ Optional:
 - `match` (Attributes List) One or more match conditions (OR-ed). (see [below for nested schema](#nestedatt--http--routing--rules--match))
 - `modify` (Attributes) One or more mutations to be performed before forwarding. Includes typical modifications to be done on a single request like URL rewrite, host rewrite, headers to add/remove/append. (see [below for nested schema](#nestedatt--http--routing--rules--modify))
 - `redirect` (Attributes) Redirect the request to a different host or URL or both. One of route, redirect, or direct_response must be specified. (see [below for nested schema](#nestedatt--http--routing--rules--redirect))
+- `retry_policy` (Attributes) Optional retry policy for this route. When set, it overrides the retry policy that `TrafficSetting` configures for the destination, for this route only. Routes that do not set `retryPolicy` keep inheriting the retry policy of the destination. Setting `attempts` to `0` disables automatic retries for this route. `retryPolicy` only applies to a rule that forwards traffic, so it cannot be set on a rule that redirects or returns a direct response. (see [below for nested schema](#nestedatt--http--routing--rules--retry_policy))
 - `route` (Attributes) Forward the request to the specified destination(s). One of route, redirect, or direct_response must be specified. (see [below for nested schema](#nestedatt--http--routing--rules--route))
 - `timeout` (Attributes) Request timeout for this route. When set, overrides any host-level timeout for this route. (see [below for nested schema](#nestedatt--http--routing--rules--timeout))
 
@@ -378,6 +379,59 @@ Optional:
 - `redirect_code` (Number) On a redirect, Specifies the HTTP status code to use in the redirect response. It is expected to be 3XX. The default response code is MOVED_PERMANENTLY (301).
 - `scheme` (String) On a redirect, overwrite the scheme with this one. This can be used to perform http -> https redirect by setting this to "https". Currently, the only supported values are "http" and "https" (in lower-case).
 - `uri` (String) On a redirect, overwrite the Path portion of the URL with this value.
+
+
+<a id="nestedatt--http--routing--rules--retry_policy"></a>
+### Nested Schema for `http.routing.rules.retry_policy`
+
+Required:
+
+- `attempts` (Number) Number of retries for a given request. The interval between retries will be determined automatically (25ms+). Actual number of retries attempted depends on the httpReqTimeout.
+
+Optional:
+
+- `per_try_timeout` (Attributes) Timeout per retry attempt for a given request. format: 1h/1m/1s/1ms. MUST BE >=1ms. (see [below for nested schema](#nestedatt--http--routing--rules--retry_policy--per_try_timeout))
+- `retry_back_off` (Attributes) Specifies the parameters that controls the interval between retry attempts, i.e., how soon the next retry should be attempted after a failure. The back-off interval for the N-th retry is chosen randomly in the range: [0, min((2^N - 1)* B, max_interval)] where B is the base_interval. This field is optional. If unset, the default base_interval is 25ms and the default max_interval is 10 times the base_interval. (see [below for nested schema](#nestedatt--http--routing--rules--retry_policy--retry_back_off))
+- `retry_on` (String) Specifies the conditions under which retry takes place. One or more policies can be specified using a ‘,’ delimited list. See the [retry policies](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/router_filter#x-envoy-retry-on) and [gRPC retry policies](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/router_filter#x-envoy-retry-grpc-on) for more details.
+
+<a id="nestedatt--http--routing--rules--retry_policy--per_try_timeout"></a>
+### Nested Schema for `http.routing.rules.retry_policy.per_try_timeout`
+
+Optional:
+
+- `nanos` (Number) Signed fractions of a second at nanosecond resolution of the span of time. Durations less than one second are represented with a 0 `seconds` field and a positive or negative `nanos` field. For durations of one second or more, a non-zero value for the `nanos` field must be of the same sign as the `seconds` field. Must be from -999,999,999 to +999,999,999 inclusive.
+- `seconds` (Number) Signed seconds of the span of time. Must be from -315,576,000,000 to +315,576,000,000 inclusive. Note: these bounds are computed from: 60 sec/min * 60 min/hr * 24 hr/day * 365.25 days/year * 10000 years
+
+
+<a id="nestedatt--http--routing--rules--retry_policy--retry_back_off"></a>
+### Nested Schema for `http.routing.rules.retry_policy.retry_back_off`
+
+Required:
+
+- `base_interval` (Attributes) The base interval between retry attempts. This parameter is required and must be greater than zero. Values less than 1 ms are rounded up to 1 ms. The default value is 25ms. (see [below for nested schema](#nestedatt--http--routing--rules--retry_policy--retry_back_off--base_interval))
+
+Optional:
+
+- `max_interval` (Attributes) The maximum interval between retry attempts. This parameter is optional but must be greater than or equal to base_interval if set. The default is 10 times the base_interval. (see [below for nested schema](#nestedatt--http--routing--rules--retry_policy--retry_back_off--max_interval))
+
+<a id="nestedatt--http--routing--rules--retry_policy--retry_back_off--base_interval"></a>
+### Nested Schema for `http.routing.rules.retry_policy.retry_back_off.base_interval`
+
+Optional:
+
+- `nanos` (Number) Signed fractions of a second at nanosecond resolution of the span of time. Durations less than one second are represented with a 0 `seconds` field and a positive or negative `nanos` field. For durations of one second or more, a non-zero value for the `nanos` field must be of the same sign as the `seconds` field. Must be from -999,999,999 to +999,999,999 inclusive.
+- `seconds` (Number) Signed seconds of the span of time. Must be from -315,576,000,000 to +315,576,000,000 inclusive. Note: these bounds are computed from: 60 sec/min * 60 min/hr * 24 hr/day * 365.25 days/year * 10000 years
+
+
+<a id="nestedatt--http--routing--rules--retry_policy--retry_back_off--max_interval"></a>
+### Nested Schema for `http.routing.rules.retry_policy.retry_back_off.max_interval`
+
+Optional:
+
+- `nanos` (Number) Signed fractions of a second at nanosecond resolution of the span of time. Durations less than one second are represented with a 0 `seconds` field and a positive or negative `nanos` field. For durations of one second or more, a non-zero value for the `nanos` field must be of the same sign as the `seconds` field. Must be from -999,999,999 to +999,999,999 inclusive.
+- `seconds` (Number) Signed seconds of the span of time. Must be from -315,576,000,000 to +315,576,000,000 inclusive. Note: these bounds are computed from: 60 sec/min * 60 min/hr * 24 hr/day * 365.25 days/year * 10000 years
+
+
 
 
 <a id="nestedatt--http--routing--rules--route"></a>
@@ -725,12 +779,14 @@ Optional:
 
 Required:
 
-- `name` (String) A friendly name to identify the binding.
+- `name` (String) A name identifying the rule. Names must be unique within a server. For `DENY` and `AUDIT` rules they must also be unique across servers that share a filter chain, among rules with the same action. Plaintext servers on the same port share a chain, because Istio serves them from one listener. For `DENY` and `AUDIT` rules the proxy reports this name as the effective policy ID. It appears in the access log record, so the record shows which rule matched. Name an `AUDIT` rule after what it watches.
 
 Optional:
 
+- `action` (String) What happens to a request matching this rule. If unset, the request is permitted. Possible values: ALLOW, DENY, AUDIT.
 - `from` (Attributes List) Subjects configure the actors (end users, other services)  that are allowed to access the target resource. (see [below for nested schema](#nestedatt--http--authorization--local--rules--from))
-- `to` (Attributes List) A set of HTTP rules that need to be satisfied by the HTTP requests to get access to the target resource. (see [below for nested schema](#nestedatt--http--authorization--local--rules--to))
+- `to` (Attributes List) A set of HTTP rules that need to be satisfied by the HTTP requests to get access to the target resource. A rule that states neither `from`, `to` nor `when` matches every request the server handles. That is how an `AUDIT` rule records a whole server, and how a `DENY` rule closes one. An `ALLOW` rule must say what it permits. (see [below for nested schema](#nestedatt--http--authorization--local--rules--to))
+- `when` (Attributes List) Conditions that must all hold for the rule to match. They apply in addition to `from` and `to`. XCP scopes every rule to the server that declares it. It does this by adding that server's host and port to the rule. Conditions are combined with that scope, so a condition can narrow a rule within its server but cannot widen it to other servers. This matters for conditions on `request.headers[:authority]` and `destination.port`. On a server with a specific hostname, a condition naming a different host never matches. Such requests do not reach that server anyway. On a server whose hostname is `*`, the condition works as written. (see [below for nested schema](#nestedatt--http--authorization--local--rules--when))
 
 <a id="nestedatt--http--authorization--local--rules--from"></a>
 ### Nested Schema for `http.authorization.local.rules.from`
@@ -756,7 +812,22 @@ Optional:
 Optional:
 
 - `methods` (List of String) The HTTP methods that are allowed by this rule. E.g. ["GET", "HEAD"].
-- `paths` (List of String) The request path where the request is made against. E.g. ["/accounts"].
+- `not_methods` (List of String) Methods that must NOT match for this rule to apply.
+- `not_paths` (List of String) Paths that must NOT match for this rule to apply. Same matching as `paths`.
+- `paths` (List of String) The request path where the request is made against. E.g. ["/accounts"]. Supports exact match, prefix match with a trailing `*` and suffix match with a leading `*`. A single `*` matches any path.
+
+
+<a id="nestedatt--http--authorization--local--rules--when"></a>
+### Nested Schema for `http.authorization.local.rules.when`
+
+Required:
+
+- `key` (String) The attribute to match, for example `request.headers[x-api-key]`, `request.auth.claims[group]`, `connection.sni` or `source.ip`. HTTP/2 pseudo headers are addressable, so `request.headers[:authority]` and `request.headers[:path]` work, and unlike `to.paths` the latter includes the query string.
+
+Optional:
+
+- `not_values` (List of String) The condition holds only when the attribute matches none of these values. Same matching as `values`. A single `*` therefore requires the attribute to be absent.
+- `values` (List of String) The condition holds when the attribute matches any of these values. Supports exact match, prefix match with a trailing `*`, suffix match with a leading `*`, and a single `*` which matches any value, i.e. requires the attribute to be present.
 
 
 
@@ -902,7 +973,9 @@ Optional:
 
 Optional:
 
-- `enabled` (Boolean) If set to true, the OpenAPI document is enabled for validation. Defaults to false.
+- `enabled` (Boolean) Deprecated: use `mode` instead. If set to true and `mode` is `DISABLED`, the gateway uses `ENFORCE`. Defaults to false.
+- `log_values` (Boolean) If set to true, validation error messages include the request body and parameter values, and why they failed validation. The messages are logged by the gateway. Values may contain sensitive data, so by default errors only give the location of the invalid value, such as `/username`. Defaults to false.
+- `mode` (String) How the gateway validates requests and responses against the OpenAPI document. Defaults to `DISABLED`. Possible values: DISABLED, ENFORCE, MONITOR.
 - `path_prefix` (String) Prefix to add to the paths in the OpenAPI doc before matching against incoming requests.
 
 
@@ -1243,6 +1316,7 @@ Optional:
 
 Optional:
 
+- `alpn_protocols` (List of String) List of ALPN protocols advertised by the server during the TLS handshake, in order of preference. When set, this list replaces the ALPN protocols that would otherwise be advertised for this server (`h2` and `http/1.1` for HTTP servers), so it can be used to stop advertising HTTP/2 to clients that negotiate it but cannot use it. Common values are "h2" and "http/1.1"; the gateway must be able to serve whatever is advertised, since a client may negotiate any protocol in the list. This only applies to servers that terminate TLS, i.e. servers whose `mode` is not DISABLED. It is ignored for TLS passthrough servers, which never terminate the handshake, and has no effect when left empty.
 - `cipher_suites` (List of String) List of cipher suites to be used for TLS connections. Examples of cipher suites: - "TLS_RSA_WITH_AES_256_CBC_SHA" - "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256" - "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384" - "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256" - "TLS_RSA_WITH_3DES_EDE_CBC_SHA"
 - `files` (Attributes) Load the keys and certificates from files accessible to the ingress gateway workload. Only one of secretName or files must be specified. (see [below for nested schema](#nestedatt--http--tls--files))
 - `max_protocol_version` (String) Set the maximum supported TLS protocol version. Valid options: TLS_AUTO, TLSV1_0, TLSV1_1, TLSV1_2, TLSV1_3. Possible values: TLS_AUTO, TLSV1_0, TLSV1_1, TLSV1_2, TLSV1_3.
@@ -1383,6 +1457,7 @@ Optional:
 
 Optional:
 
+- `alpn_protocols` (List of String) List of ALPN protocols advertised by the server during the TLS handshake, in order of preference. When set, this list replaces the ALPN protocols that would otherwise be advertised for this server (`h2` and `http/1.1` for HTTP servers), so it can be used to stop advertising HTTP/2 to clients that negotiate it but cannot use it. Common values are "h2" and "http/1.1"; the gateway must be able to serve whatever is advertised, since a client may negotiate any protocol in the list. This only applies to servers that terminate TLS, i.e. servers whose `mode` is not DISABLED. It is ignored for TLS passthrough servers, which never terminate the handshake, and has no effect when left empty.
 - `cipher_suites` (List of String) List of cipher suites to be used for TLS connections. Examples of cipher suites: - "TLS_RSA_WITH_AES_256_CBC_SHA" - "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256" - "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384" - "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256" - "TLS_RSA_WITH_3DES_EDE_CBC_SHA"
 - `files` (Attributes) Load the keys and certificates from files accessible to the ingress gateway workload. Only one of secretName or files must be specified. (see [below for nested schema](#nestedatt--tcp--tls--files))
 - `max_protocol_version` (String) Set the maximum supported TLS protocol version. Valid options: TLS_AUTO, TLSV1_0, TLSV1_1, TLSV1_2, TLSV1_3. Possible values: TLS_AUTO, TLSV1_0, TLSV1_1, TLSV1_2, TLSV1_3.

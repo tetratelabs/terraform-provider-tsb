@@ -444,6 +444,52 @@ func flattenClusterOnboardingConfig(ctx context.Context, p *v2.ClusterOnboarding
 	return diags
 }
 
+// ExtensionUIExtensionModel is the Terraform model for UIExtension.
+type ExtensionUIExtensionModel struct {
+	ID          types.String    `tfsdk:"id"`
+	Parent      types.String    `tfsdk:"parent"`
+	Name        types.String    `tfsdk:"name"`
+	DisplayName types.String    `tfsdk:"display_name"`
+	Description types.String    `tfsdk:"description"`
+	Image       types.String    `tfsdk:"image"`
+	Enabled     *BoolValueModel `tfsdk:"enabled"`
+}
+
+// expandExtensionUIExtension converts the Terraform model into a UIExtension proto.
+func expandExtensionUIExtension(ctx context.Context, m *ExtensionUIExtensionModel) (*v22.UIExtension, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	if m == nil {
+		return nil, diags
+	}
+	out := &v22.UIExtension{}
+	out.DisplayName = m.DisplayName.ValueString()
+	out.Description = m.Description.ValueString()
+	out.Image = m.Image.ValueString()
+	if m.Enabled != nil {
+		v, d := expandBoolValue(ctx, m.Enabled)
+		diags.Append(d...)
+		out.Enabled = v
+	}
+	return out, diags
+}
+
+// flattenExtensionUIExtension writes a UIExtension proto into the Terraform model.
+func flattenExtensionUIExtension(ctx context.Context, p *v22.UIExtension, m *ExtensionUIExtensionModel) diag.Diagnostics {
+	var diags diag.Diagnostics
+	m.ID = types.StringValue(p.Fqn)
+	m.DisplayName = stringOrNull(p.DisplayName)
+	m.Description = stringOrNull(p.Description)
+	m.Image = stringOrNull(p.Image)
+	if p.Enabled != nil {
+		var nm BoolValueModel
+		diags.Append(flattenBoolValue(ctx, p.Enabled, &nm)...)
+		m.Enabled = &nm
+	} else {
+		m.Enabled = nil
+	}
+	return diags
+}
+
 // ExtensionWasmExtensionModel is the Terraform model for WasmExtension.
 type ExtensionWasmExtensionModel struct {
 	ID              types.String                `tfsdk:"id"`
@@ -1650,16 +1696,17 @@ func flattenOrganization(ctx context.Context, p *v2.Organization, m *Organizatio
 
 // OrganizationSettingModel is the Terraform model for OrganizationSetting.
 type OrganizationSettingModel struct {
-	ID                     types.String                              `tfsdk:"id"`
-	Parent                 types.String                              `tfsdk:"parent"`
-	Name                   types.String                              `tfsdk:"name"`
-	DisplayName            types.String                              `tfsdk:"display_name"`
-	Description            types.String                              `tfsdk:"description"`
-	NetworkSettings        *OrganizationSetting_NetworkSettingsModel `tfsdk:"network_settings"`
-	RegionalFailover       []RegionalFailoverModel                   `tfsdk:"regional_failover"`
-	DefaultSecuritySetting *SecuritySecuritySettingModel             `tfsdk:"default_security_setting"`
-	DefaultTrafficSetting  *TrafficTrafficSettingModel               `tfsdk:"default_traffic_setting"`
-	FailoverSettings       *FailoverSettingsModel                    `tfsdk:"failover_settings"`
+	ID                        types.String                              `tfsdk:"id"`
+	Parent                    types.String                              `tfsdk:"parent"`
+	Name                      types.String                              `tfsdk:"name"`
+	DisplayName               types.String                              `tfsdk:"display_name"`
+	Description               types.String                              `tfsdk:"description"`
+	NetworkSettings           *OrganizationSetting_NetworkSettingsModel `tfsdk:"network_settings"`
+	RegionalFailover          []RegionalFailoverModel                   `tfsdk:"regional_failover"`
+	DefaultSecuritySetting    *SecuritySecuritySettingModel             `tfsdk:"default_security_setting"`
+	DefaultTrafficSetting     *TrafficTrafficSettingModel               `tfsdk:"default_traffic_setting"`
+	FailoverSettings          *FailoverSettingsModel                    `tfsdk:"failover_settings"`
+	DeletionProtectionEnabled types.Bool                                `tfsdk:"deletion_protection_enabled"`
 }
 
 // expandOrganizationSetting converts the Terraform model into a OrganizationSetting proto.
@@ -1698,6 +1745,7 @@ func expandOrganizationSetting(ctx context.Context, m *OrganizationSettingModel)
 		diags.Append(d...)
 		out.FailoverSettings = v
 	}
+	out.DeletionProtectionEnabled = m.DeletionProtectionEnabled.ValueBool()
 	return out, diags
 }
 
@@ -1741,6 +1789,7 @@ func flattenOrganizationSetting(ctx context.Context, p *v2.OrganizationSetting, 
 	} else {
 		m.FailoverSettings = nil
 	}
+	m.DeletionProtectionEnabled = types.BoolValue(p.DeletionProtectionEnabled)
 	return diags
 }
 
@@ -2098,12 +2147,13 @@ func flattenSecurityServiceSecuritySetting(ctx context.Context, p *v28.ServiceSe
 
 // ServiceAccountModel is the Terraform model for ServiceAccount.
 type ServiceAccountModel struct {
-	ID          types.String         `tfsdk:"id"`
-	Parent      types.String         `tfsdk:"parent"`
-	Name        types.String         `tfsdk:"name"`
-	DisplayName types.String         `tfsdk:"display_name"`
-	Description types.String         `tfsdk:"description"`
-	Keys        jsontypes.Normalized `tfsdk:"keys"`
+	ID            types.String         `tfsdk:"id"`
+	Parent        types.String         `tfsdk:"parent"`
+	Name          types.String         `tfsdk:"name"`
+	DisplayName   types.String         `tfsdk:"display_name"`
+	Description   types.String         `tfsdk:"description"`
+	Keys          jsontypes.Normalized `tfsdk:"keys"`
+	KeyManagement types.String         `tfsdk:"key_management"`
 }
 
 // expandServiceAccount converts the Terraform model into a ServiceAccount proto.
@@ -2115,6 +2165,7 @@ func expandServiceAccount(ctx context.Context, m *ServiceAccountModel) (*v2.Serv
 	out := &v2.ServiceAccount{}
 	out.DisplayName = m.DisplayName.ValueString()
 	out.Description = m.Description.ValueString()
+	out.KeyManagement = v2.ServiceAccount_KeyManagement(expandEnum(m.KeyManagement, v2.ServiceAccount_KeyManagement_value, "key_management", &diags))
 	return out, diags
 }
 
@@ -2127,6 +2178,7 @@ func flattenServiceAccount(ctx context.Context, p *v2.ServiceAccount, m *Service
 	v, d := protoMessagesToJSON(p.Keys)
 	diags.Append(d...)
 	m.Keys = v
+	m.KeyManagement = types.StringValue(p.KeyManagement.String())
 	return diags
 }
 
@@ -2253,13 +2305,14 @@ func flattenTenant(ctx context.Context, p *v2.Tenant, m *TenantModel) diag.Diagn
 
 // TenantSettingModel is the Terraform model for TenantSetting.
 type TenantSettingModel struct {
-	ID                     types.String                  `tfsdk:"id"`
-	Parent                 types.String                  `tfsdk:"parent"`
-	Name                   types.String                  `tfsdk:"name"`
-	DisplayName            types.String                  `tfsdk:"display_name"`
-	Description            types.String                  `tfsdk:"description"`
-	DefaultSecuritySetting *SecuritySecuritySettingModel `tfsdk:"default_security_setting"`
-	DefaultTrafficSetting  *TrafficTrafficSettingModel   `tfsdk:"default_traffic_setting"`
+	ID                        types.String                  `tfsdk:"id"`
+	Parent                    types.String                  `tfsdk:"parent"`
+	Name                      types.String                  `tfsdk:"name"`
+	DisplayName               types.String                  `tfsdk:"display_name"`
+	Description               types.String                  `tfsdk:"description"`
+	DefaultSecuritySetting    *SecuritySecuritySettingModel `tfsdk:"default_security_setting"`
+	DefaultTrafficSetting     *TrafficTrafficSettingModel   `tfsdk:"default_traffic_setting"`
+	DeletionProtectionEnabled types.Bool                    `tfsdk:"deletion_protection_enabled"`
 }
 
 // expandTenantSetting converts the Terraform model into a TenantSetting proto.
@@ -2281,6 +2334,7 @@ func expandTenantSetting(ctx context.Context, m *TenantSettingModel) (*v2.Tenant
 		diags.Append(d...)
 		out.DefaultTrafficSetting = v
 	}
+	out.DeletionProtectionEnabled = m.DeletionProtectionEnabled.ValueBool()
 	return out, diags
 }
 
@@ -2304,6 +2358,7 @@ func flattenTenantSetting(ctx context.Context, p *v2.TenantSetting, m *TenantSet
 	} else {
 		m.DefaultTrafficSetting = nil
 	}
+	m.DeletionProtectionEnabled = types.BoolValue(p.DeletionProtectionEnabled)
 	return diags
 }
 
@@ -5275,8 +5330,9 @@ func flattenAuthorizationSettings(ctx context.Context, p *v28.AuthorizationSetti
 
 // AuthenticationSettingsModel is the Terraform model for AuthenticationSettings.
 type AuthenticationSettingsModel struct {
-	TrafficMode types.String             `tfsdk:"traffic_mode"`
-	Http        *AuthAuthenticationModel `tfsdk:"http"`
+	TrafficMode        types.String             `tfsdk:"traffic_mode"`
+	Http               *AuthAuthenticationModel `tfsdk:"http"`
+	MinProtocolVersion types.String             `tfsdk:"min_protocol_version"`
 }
 
 // expandAuthenticationSettings converts the Terraform model into a AuthenticationSettings proto.
@@ -5292,6 +5348,7 @@ func expandAuthenticationSettings(ctx context.Context, m *AuthenticationSettings
 		diags.Append(d...)
 		out.Http = v
 	}
+	out.MinProtocolVersion = v24.TLSProtocol(expandEnum(m.MinProtocolVersion, v24.TLSProtocol_value, "min_protocol_version", &diags))
 	return out, diags
 }
 
@@ -5306,6 +5363,7 @@ func flattenAuthenticationSettings(ctx context.Context, p *v28.AuthenticationSet
 	} else {
 		m.Http = nil
 	}
+	m.MinProtocolVersion = types.StringValue(p.MinProtocolVersion.String())
 	return diags
 }
 
@@ -6103,6 +6161,7 @@ type ServerTLSSettingsModel struct {
 	MaxProtocolVersion types.String                       `tfsdk:"max_protocol_version"`
 	CipherSuites       types.List                         `tfsdk:"cipher_suites"`
 	SubjectAltNames    types.List                         `tfsdk:"subject_alt_names"`
+	AlpnProtocols      types.List                         `tfsdk:"alpn_protocols"`
 }
 
 // expandServerTLSSettings converts the Terraform model into a ServerTLSSettings proto.
@@ -6126,6 +6185,9 @@ func expandServerTLSSettings(ctx context.Context, m *ServerTLSSettingsModel) (*v
 	}
 	if !m.SubjectAltNames.IsNull() && !m.SubjectAltNames.IsUnknown() {
 		diags.Append(m.SubjectAltNames.ElementsAs(ctx, &out.SubjectAltNames, false)...)
+	}
+	if !m.AlpnProtocols.IsNull() && !m.AlpnProtocols.IsUnknown() {
+		diags.Append(m.AlpnProtocols.ElementsAs(ctx, &out.AlpnProtocols, false)...)
 	}
 	return out, diags
 }
@@ -6153,6 +6215,11 @@ func flattenServerTLSSettings(ctx context.Context, p *v23.ServerTLSSettings, m *
 		lv, d := listOrNull(ctx, types.StringType, p.SubjectAltNames)
 		diags.Append(d...)
 		m.SubjectAltNames = lv
+	}
+	{
+		lv, d := listOrNull(ctx, types.StringType, p.AlpnProtocols)
+		diags.Append(d...)
+		m.AlpnProtocols = lv
 	}
 	return diags
 }
@@ -9325,6 +9392,7 @@ type HttpRouteRuleModel struct {
 	Extensions                   *ExtensionsModel          `tfsdk:"extensions"`
 	CorsPolicy                   *CorsPolicyModel          `tfsdk:"cors_policy"`
 	Timeout                      *DurationModel            `tfsdk:"timeout"`
+	RetryPolicy                  *GatewayHTTPRetryModel    `tfsdk:"retry_policy"`
 }
 
 // expandHttpRouteRule converts the Terraform model into a HttpRouteRule proto.
@@ -9382,6 +9450,11 @@ func expandHttpRouteRule(ctx context.Context, m *HttpRouteRuleModel) (*v23.HttpR
 		v, d := expandDuration(ctx, m.Timeout)
 		diags.Append(d...)
 		out.Timeout = v
+	}
+	if m.RetryPolicy != nil {
+		v, d := expandGatewayHTTPRetry(ctx, m.RetryPolicy)
+		diags.Append(d...)
+		out.RetryPolicy = v
 	}
 	return out, diags
 }
@@ -9445,6 +9518,13 @@ func flattenHttpRouteRule(ctx context.Context, p *v23.HttpRouteRule, m *HttpRout
 	} else {
 		m.Timeout = nil
 	}
+	if p.RetryPolicy != nil {
+		var nm GatewayHTTPRetryModel
+		diags.Append(flattenGatewayHTTPRetry(ctx, p.RetryPolicy, &nm)...)
+		m.RetryPolicy = &nm
+	} else {
+		m.RetryPolicy = nil
+	}
 	return diags
 }
 
@@ -9452,6 +9532,8 @@ func flattenHttpRouteRule(ctx context.Context, p *v23.HttpRouteRule, m *HttpRout
 type OpenAPI_ValidationModel struct {
 	Enabled    types.Bool   `tfsdk:"enabled"`
 	PathPrefix types.String `tfsdk:"path_prefix"`
+	LogValues  types.Bool   `tfsdk:"log_values"`
+	Mode       types.String `tfsdk:"mode"`
 }
 
 // expandOpenAPI_Validation converts the Terraform model into a OpenAPI_Validation proto.
@@ -9463,6 +9545,8 @@ func expandOpenAPI_Validation(ctx context.Context, m *OpenAPI_ValidationModel) (
 	out := &v23.OpenAPI_Validation{}
 	out.Enabled = m.Enabled.ValueBool()
 	out.PathPrefix = m.PathPrefix.ValueString()
+	out.LogValues = m.LogValues.ValueBool()
+	out.Mode = v23.OpenAPI_Validation_Mode(expandEnum(m.Mode, v23.OpenAPI_Validation_Mode_value, "mode", &diags))
 	return out, diags
 }
 
@@ -9471,6 +9555,8 @@ func flattenOpenAPI_Validation(ctx context.Context, p *v23.OpenAPI_Validation, m
 	var diags diag.Diagnostics
 	m.Enabled = types.BoolValue(p.Enabled)
 	m.PathPrefix = stringOrNull(p.PathPrefix)
+	m.LogValues = types.BoolValue(p.LogValues)
+	m.Mode = types.StringValue(p.Mode.String())
 	return diags
 }
 
@@ -9681,6 +9767,7 @@ type ControlPlaneSpecModel struct {
 	ProviderSettings              *ProviderSettingsModel                   `tfsdk:"provider_settings"`
 	ManagementPlane               *ManagementPlaneSettingsModel            `tfsdk:"management_plane"`
 	MeshExpansion                 *MeshExpansionSettingsModel              `tfsdk:"mesh_expansion"`
+	ConfigSnapshot                *ConfigSnapshotSettingsModel             `tfsdk:"config_snapshot"`
 	TelemetryStore                *ControlPlaneSpec_TelemetryStoreModel    `tfsdk:"telemetry_store"`
 	TelemetryStoreMigrationTarget *ControlPlaneSpec_TelemetryStoreModel    `tfsdk:"telemetry_store_migration_target"`
 	MeshObservability             *ControlPlaneSpec_MeshObservabilityModel `tfsdk:"mesh_observability"`
@@ -9722,6 +9809,11 @@ func expandControlPlaneSpec(ctx context.Context, m *ControlPlaneSpecModel) (*v1a
 		v, d := expandMeshExpansionSettings(ctx, m.MeshExpansion)
 		diags.Append(d...)
 		out.MeshExpansion = v
+	}
+	if m.ConfigSnapshot != nil {
+		v, d := expandConfigSnapshotSettings(ctx, m.ConfigSnapshot)
+		diags.Append(d...)
+		out.ConfigSnapshot = v
 	}
 	if m.TelemetryStore != nil {
 		v, d := expandControlPlaneSpec_TelemetryStore(ctx, m.TelemetryStore)
@@ -9780,6 +9872,13 @@ func flattenControlPlaneSpec(ctx context.Context, p *v1alpha15.ControlPlaneSpec,
 		m.MeshExpansion = &nm
 	} else {
 		m.MeshExpansion = nil
+	}
+	if p.ConfigSnapshot != nil {
+		var nm ConfigSnapshotSettingsModel
+		diags.Append(flattenConfigSnapshotSettings(ctx, p.ConfigSnapshot, &nm)...)
+		m.ConfigSnapshot = &nm
+	} else {
+		m.ConfigSnapshot = nil
 	}
 	if p.TelemetryStore != nil {
 		var nm ControlPlaneSpec_TelemetryStoreModel
@@ -11835,9 +11934,11 @@ func flattenLocalAuthzRule(ctx context.Context, p *v23.LocalAuthzRule, m *LocalA
 
 // AuthLocalAuthzRuleModel is the Terraform model for LocalAuthzRule.
 type AuthLocalAuthzRuleModel struct {
-	Name types.String                            `tfsdk:"name"`
-	From []AuthSubjectModel                      `tfsdk:"from"`
-	To   []AuthLocalAuthzRule_HttpOperationModel `tfsdk:"to"`
+	Name   types.String                            `tfsdk:"name"`
+	From   []AuthSubjectModel                      `tfsdk:"from"`
+	To     []AuthLocalAuthzRule_HttpOperationModel `tfsdk:"to"`
+	Action types.String                            `tfsdk:"action"`
+	When   []LocalAuthzRule_ConditionModel         `tfsdk:"when"`
 }
 
 // expandAuthLocalAuthzRule converts the Terraform model into a LocalAuthzRule proto.
@@ -11862,6 +11963,14 @@ func expandAuthLocalAuthzRule(ctx context.Context, m *AuthLocalAuthzRuleModel) (
 			out.To = append(out.To, ev)
 		}
 	}
+	out.Action = v210.LocalAuthzRule_Action(expandEnum(m.Action, v210.LocalAuthzRule_Action_value, "action", &diags))
+	for i := range m.When {
+		ev, d := expandLocalAuthzRule_Condition(ctx, &m.When[i])
+		diags.Append(d...)
+		if ev != nil {
+			out.When = append(out.When, ev)
+		}
+	}
 	return out, diags
 }
 
@@ -11880,6 +11989,13 @@ func flattenAuthLocalAuthzRule(ctx context.Context, p *v210.LocalAuthzRule, m *A
 		var em AuthLocalAuthzRule_HttpOperationModel
 		diags.Append(flattenAuthLocalAuthzRule_HttpOperation(ctx, e, &em)...)
 		m.To = append(m.To, em)
+	}
+	m.Action = types.StringValue(p.Action.String())
+	m.When = nil
+	for _, e := range p.When {
+		var em LocalAuthzRule_ConditionModel
+		diags.Append(flattenLocalAuthzRule_Condition(ctx, e, &em)...)
+		m.When = append(m.When, em)
 	}
 	return diags
 }
@@ -12050,6 +12166,58 @@ func flattenExposedByCluster(ctx context.Context, p *v21.ExposedByCluster, m *Ex
 		m.Labels = mv
 	}
 	m.Weight = types.Int64Value(int64(p.Weight))
+	return diags
+}
+
+// GatewayHTTPRetryModel is the Terraform model for HTTPRetry.
+type GatewayHTTPRetryModel struct {
+	Attempts      types.Int64                         `tfsdk:"attempts"`
+	PerTryTimeout *DurationModel                      `tfsdk:"per_try_timeout"`
+	RetryOn       types.String                        `tfsdk:"retry_on"`
+	RetryBackOff  *GatewayHTTPRetry_RetryBackOffModel `tfsdk:"retry_back_off"`
+}
+
+// expandGatewayHTTPRetry converts the Terraform model into a HTTPRetry proto.
+func expandGatewayHTTPRetry(ctx context.Context, m *GatewayHTTPRetryModel) (*v23.HTTPRetry, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	if m == nil {
+		return nil, diags
+	}
+	out := &v23.HTTPRetry{}
+	out.Attempts = int32(m.Attempts.ValueInt64())
+	if m.PerTryTimeout != nil {
+		v, d := expandDuration(ctx, m.PerTryTimeout)
+		diags.Append(d...)
+		out.PerTryTimeout = v
+	}
+	out.RetryOn = m.RetryOn.ValueString()
+	if m.RetryBackOff != nil {
+		v, d := expandGatewayHTTPRetry_RetryBackOff(ctx, m.RetryBackOff)
+		diags.Append(d...)
+		out.RetryBackOff = v
+	}
+	return out, diags
+}
+
+// flattenGatewayHTTPRetry writes a HTTPRetry proto into the Terraform model.
+func flattenGatewayHTTPRetry(ctx context.Context, p *v23.HTTPRetry, m *GatewayHTTPRetryModel) diag.Diagnostics {
+	var diags diag.Diagnostics
+	m.Attempts = types.Int64Value(int64(p.Attempts))
+	if p.PerTryTimeout != nil {
+		var nm DurationModel
+		diags.Append(flattenDuration(ctx, p.PerTryTimeout, &nm)...)
+		m.PerTryTimeout = &nm
+	} else {
+		m.PerTryTimeout = nil
+	}
+	m.RetryOn = stringOrNull(p.RetryOn)
+	if p.RetryBackOff != nil {
+		var nm GatewayHTTPRetry_RetryBackOffModel
+		diags.Append(flattenGatewayHTTPRetry_RetryBackOff(ctx, p.RetryBackOff, &nm)...)
+		m.RetryBackOff = &nm
+	} else {
+		m.RetryBackOff = nil
+	}
 	return diags
 }
 
@@ -12623,6 +12791,35 @@ func flattenMeshExpansionSettings(ctx context.Context, p *v1alpha15.MeshExpansio
 	} else {
 		m.ServiceObservability = nil
 	}
+	return diags
+}
+
+// ConfigSnapshotSettingsModel is the Terraform model for ConfigSnapshotSettings.
+type ConfigSnapshotSettingsModel struct {
+	ClaimName      types.String `tfsdk:"claim_name"`
+	Schedule       types.String `tfsdk:"schedule"`
+	DisableRestore types.Bool   `tfsdk:"disable_restore"`
+}
+
+// expandConfigSnapshotSettings converts the Terraform model into a ConfigSnapshotSettings proto.
+func expandConfigSnapshotSettings(ctx context.Context, m *ConfigSnapshotSettingsModel) (*v1alpha15.ConfigSnapshotSettings, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	if m == nil {
+		return nil, diags
+	}
+	out := &v1alpha15.ConfigSnapshotSettings{}
+	out.ClaimName = m.ClaimName.ValueString()
+	out.Schedule = m.Schedule.ValueString()
+	out.DisableRestore = m.DisableRestore.ValueBool()
+	return out, diags
+}
+
+// flattenConfigSnapshotSettings writes a ConfigSnapshotSettings proto into the Terraform model.
+func flattenConfigSnapshotSettings(ctx context.Context, p *v1alpha15.ConfigSnapshotSettings, m *ConfigSnapshotSettingsModel) diag.Diagnostics {
+	var diags diag.Diagnostics
+	m.ClaimName = stringOrNull(p.ClaimName)
+	m.Schedule = stringOrNull(p.Schedule)
+	m.DisableRestore = types.BoolValue(p.DisableRestore)
 	return diags
 }
 
@@ -14706,8 +14903,10 @@ func flattenAuthSubject(ctx context.Context, p *v210.Subject, m *AuthSubjectMode
 
 // AuthLocalAuthzRule_HttpOperationModel is the Terraform model for LocalAuthzRule_HttpOperation.
 type AuthLocalAuthzRule_HttpOperationModel struct {
-	Paths   types.List `tfsdk:"paths"`
-	Methods types.List `tfsdk:"methods"`
+	Paths      types.List `tfsdk:"paths"`
+	Methods    types.List `tfsdk:"methods"`
+	NotPaths   types.List `tfsdk:"not_paths"`
+	NotMethods types.List `tfsdk:"not_methods"`
 }
 
 // expandAuthLocalAuthzRule_HttpOperation converts the Terraform model into a LocalAuthzRule_HttpOperation proto.
@@ -14722,6 +14921,12 @@ func expandAuthLocalAuthzRule_HttpOperation(ctx context.Context, m *AuthLocalAut
 	}
 	if !m.Methods.IsNull() && !m.Methods.IsUnknown() {
 		diags.Append(m.Methods.ElementsAs(ctx, &out.Methods, false)...)
+	}
+	if !m.NotPaths.IsNull() && !m.NotPaths.IsUnknown() {
+		diags.Append(m.NotPaths.ElementsAs(ctx, &out.NotPaths, false)...)
+	}
+	if !m.NotMethods.IsNull() && !m.NotMethods.IsUnknown() {
+		diags.Append(m.NotMethods.ElementsAs(ctx, &out.NotMethods, false)...)
 	}
 	return out, diags
 }
@@ -14738,6 +14943,57 @@ func flattenAuthLocalAuthzRule_HttpOperation(ctx context.Context, p *v210.LocalA
 		lv, d := listOrNull(ctx, types.StringType, p.Methods)
 		diags.Append(d...)
 		m.Methods = lv
+	}
+	{
+		lv, d := listOrNull(ctx, types.StringType, p.NotPaths)
+		diags.Append(d...)
+		m.NotPaths = lv
+	}
+	{
+		lv, d := listOrNull(ctx, types.StringType, p.NotMethods)
+		diags.Append(d...)
+		m.NotMethods = lv
+	}
+	return diags
+}
+
+// LocalAuthzRule_ConditionModel is the Terraform model for LocalAuthzRule_Condition.
+type LocalAuthzRule_ConditionModel struct {
+	Key       types.String `tfsdk:"key"`
+	Values    types.List   `tfsdk:"values"`
+	NotValues types.List   `tfsdk:"not_values"`
+}
+
+// expandLocalAuthzRule_Condition converts the Terraform model into a LocalAuthzRule_Condition proto.
+func expandLocalAuthzRule_Condition(ctx context.Context, m *LocalAuthzRule_ConditionModel) (*v210.LocalAuthzRule_Condition, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	if m == nil {
+		return nil, diags
+	}
+	out := &v210.LocalAuthzRule_Condition{}
+	out.Key = m.Key.ValueString()
+	if !m.Values.IsNull() && !m.Values.IsUnknown() {
+		diags.Append(m.Values.ElementsAs(ctx, &out.Values, false)...)
+	}
+	if !m.NotValues.IsNull() && !m.NotValues.IsUnknown() {
+		diags.Append(m.NotValues.ElementsAs(ctx, &out.NotValues, false)...)
+	}
+	return out, diags
+}
+
+// flattenLocalAuthzRule_Condition writes a LocalAuthzRule_Condition proto into the Terraform model.
+func flattenLocalAuthzRule_Condition(ctx context.Context, p *v210.LocalAuthzRule_Condition, m *LocalAuthzRule_ConditionModel) diag.Diagnostics {
+	var diags diag.Diagnostics
+	m.Key = stringOrNull(p.Key)
+	{
+		lv, d := listOrNull(ctx, types.StringType, p.Values)
+		diags.Append(d...)
+		m.Values = lv
+	}
+	{
+		lv, d := listOrNull(ctx, types.StringType, p.NotValues)
+		diags.Append(d...)
+		m.NotValues = lv
 	}
 	return diags
 }
@@ -14848,6 +15104,52 @@ func flattenHTTPDirectResponse_HTTPBody(ctx context.Context, p *v23.HTTPDirectRe
 		m.Bytes = stringOrNull(string(w.Bytes))
 	} else {
 		m.Bytes = types.StringNull()
+	}
+	return diags
+}
+
+// GatewayHTTPRetry_RetryBackOffModel is the Terraform model for HTTPRetry_RetryBackOff.
+type GatewayHTTPRetry_RetryBackOffModel struct {
+	BaseInterval *DurationModel `tfsdk:"base_interval"`
+	MaxInterval  *DurationModel `tfsdk:"max_interval"`
+}
+
+// expandGatewayHTTPRetry_RetryBackOff converts the Terraform model into a HTTPRetry_RetryBackOff proto.
+func expandGatewayHTTPRetry_RetryBackOff(ctx context.Context, m *GatewayHTTPRetry_RetryBackOffModel) (*v23.HTTPRetry_RetryBackOff, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	if m == nil {
+		return nil, diags
+	}
+	out := &v23.HTTPRetry_RetryBackOff{}
+	if m.BaseInterval != nil {
+		v, d := expandDuration(ctx, m.BaseInterval)
+		diags.Append(d...)
+		out.BaseInterval = v
+	}
+	if m.MaxInterval != nil {
+		v, d := expandDuration(ctx, m.MaxInterval)
+		diags.Append(d...)
+		out.MaxInterval = v
+	}
+	return out, diags
+}
+
+// flattenGatewayHTTPRetry_RetryBackOff writes a HTTPRetry_RetryBackOff proto into the Terraform model.
+func flattenGatewayHTTPRetry_RetryBackOff(ctx context.Context, p *v23.HTTPRetry_RetryBackOff, m *GatewayHTTPRetry_RetryBackOffModel) diag.Diagnostics {
+	var diags diag.Diagnostics
+	if p.BaseInterval != nil {
+		var nm DurationModel
+		diags.Append(flattenDuration(ctx, p.BaseInterval, &nm)...)
+		m.BaseInterval = &nm
+	} else {
+		m.BaseInterval = nil
+	}
+	if p.MaxInterval != nil {
+		var nm DurationModel
+		diags.Append(flattenDuration(ctx, p.MaxInterval, &nm)...)
+		m.MaxInterval = &nm
+	} else {
+		m.MaxInterval = nil
 	}
 	return diags
 }
