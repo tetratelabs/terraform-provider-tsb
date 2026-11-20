@@ -61,6 +61,7 @@ func (r *serviceAccountResource) Create(ctx context.Context, req resource.Create
 	}
 	c := v2.NewTeamsClient(r.client.conn)
 	created, err := c.CreateServiceAccount(ctx, &v2.CreateServiceAccountRequest{
+		KeyEncoding:    v2.ServiceAccount_KeyPair_JWK,
 		Name:           plan.Name.ValueString(),
 		Parent:         plan.Parent.ValueString(),
 		ServiceAccount: msg,
